@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 import sys
 from Bio import SeqIO
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 from Bio.Graphics import GenomeDiagram
-#from Bio import SeqIO
 
 
-# Declaration des fonctions
+# Some functions
 
 def prepare_color_dict():
 
@@ -21,7 +19,7 @@ def prepare_color_dict():
 		iii) replication/transposase | blue
 		iv) maintenance and stability | green
 		v) pil genes | lightblue
-		vi) shufflon | orange"""
+		vi) shufflon | orange """
 
 	fn_colors = {}		# Dictionnaire pour associer les genes a une couleur refletant la categorie fonctionnelle; voir fn prepare_color_dict
 
@@ -128,7 +126,7 @@ def digest_features(record, fn_colors, gd_feature_set):
 
 						b = inf2.split("|")				# To get the gene name, 
 
-						#megares_gene = (b[1])			# located after the first pipe, e.g. : sequence:megares.pep:Tmt|DfrA17|AB126604|98-
+						# megares_gene = (b[1])			# located after the first pipe, e.g. : sequence:megares.pep:Tmt|DfrA17|AB126604|98-
 						card_gene = (b[3])			# located after the 3rd pipe, e.g. : similar to AA sequence:protein_fasta_protein_homolog_model.fasta:gb
 															# |CAA63262.1|ARO:3001864|CTX-M-1"
 							
@@ -169,9 +167,6 @@ def digest_features(record, fn_colors, gd_feature_set):
 						break
 
 
-
-
-
 				# To control the flow process; we want to continue searching if flagGeneDraw != TRUE
 
 				if flagGeneDraw == 'TRUE':
@@ -188,18 +183,12 @@ def digest_features(record, fn_colors, gd_feature_set):
 
 					if 'gene' in feature.qualifiers:
 
-						# data in qualifiers are all lists, even if only 1 string, so [0] converts to string
-        				# use lower() to make sure weirdly capitilized strings get selected as well
-						# my_gene = feature.qualifiers['gene'][0].lower()
-						# interesting, but I want my genes like rpoA
-
 						my_gene = feature.qualifiers['gene'][0]
 
 
-						# coloring the gene accroding to colors defined in a dictionnary
+						# Coloring the gene according to colors defined in a dictionnary
 
-
-						# avec la methode get, va chercher la colour associe au gene dans le dict fn_colors, si absent : gris
+						# Avec la methode get, va chercher la colour associe au gene dans le dict fn_colors, si absent : gris
 						color = fn_colors.get(my_gene, colors.gray)
 
 
@@ -222,7 +211,7 @@ def digest_features(record, fn_colors, gd_feature_set):
 		
 					else:
 
-						#print ("We do not found a CDS with a gene label for that CDS feature")
+						# Print ("We did not found a CDS with a gene label for that CDS feature")
 
 						# Adding this gene to our feature set
 
@@ -250,8 +239,6 @@ def get_coord_gene(record, geneName):
 
 					location = feature.location.start
 					break
-
-		
 
 	return location
 
