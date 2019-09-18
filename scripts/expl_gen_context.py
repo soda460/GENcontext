@@ -14,6 +14,7 @@ __date__ = "2019-09-17"
 # Importation de modules standards
 import sys
 import os
+from pathlib import Path
 from Bio.Graphics import GenomeDiagram
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
@@ -29,22 +30,25 @@ import glob
 from foreign_code import prepare_color_dict
 from foreign_code import digest_features
 from foreign_code import get_coord_gene
-
 from geneCluster import geneCluster
 
 
 
-def get_txt_files(start_dir):
-	""" Given a directory, make a list of gbk files
-	    This function assume that these files are located in subfolders of the input directory.
+def get_gbk_files(start_dir):
+	""" Given a directory, make a list of genbank files
+	    This function will find all files recursively.
 	"""
-	txt_files = []
-	matches = glob.glob(start_dir + "/*/*/*.gbk")
-	if matches:
-		txt_files += matches
-		return txt_files
-	else:
-		print ("Files not found!")
+	gbk_files = []
+	for filename in Path(start_dir).glob('**/*.gbk'):
+		print(filename)
+		gbk_files.append(filename)
+	return gbk_files
+
+
+
+
+
+
 
 
 def examine_gbk_file (gene, gbk_f):
