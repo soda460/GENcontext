@@ -20,7 +20,7 @@ from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from io import StringIO
 from collections import OrderedDict
-import pandas as pd
+#import pandas as pd
 import numpy
 import re
 import csv
@@ -335,7 +335,7 @@ if __name__ == "__main__":
 	folder = sys.argv[2]
 	nb_genes_in_context = int(sys.argv[3])
 
-	gbk_files = get_txt_files(folder)		
+	gbk_files = get_gbk_files(folder)		
 
 	for f in gbk_files:
 		hits = examine_gbk_file(amr_in, f)
