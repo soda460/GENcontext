@@ -15,7 +15,7 @@ __date__ = "2019-09-17"
 import sys
 import os
 from pathlib import Path
-from Bio.Graphics import GenomeDiagram
+#from Bio.Graphics import GenomeDiagram
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from io import StringIO
@@ -41,7 +41,7 @@ def get_gbk_files(start_dir):
 	gbk_files = []
 	for filename in Path(start_dir).glob('**/*.gbk'):
 		print(filename)
-		gbk_files.append(filename)
+		gbk_files.append(str(filename))
 	return gbk_files
 
 
