@@ -349,23 +349,21 @@ def check_if_included_in_larger_gene_cluster(gene_cluster, status):
 							# We therefore need to increase the counter of this group and add edc to the list of gene cluster objects
 							# If we try to write in d with the key edcba, we would get a key error because the cluster of gene clusters
 							# is labeled with abcde. This is why we will use the revese_read() fn to access the appropriate key.
-							# But does it occurs ?
 							if cluster_in_dict.reverse_read() in d:
 								if status=='normal':
-									d[cluster_in_dict.read()]['n'] += 1
-									d[cluster_in_dict.read()]['geneClusterObjects'].append(gene_cluster)
+									d[cluster_in_dict.reverse_read()]['n'] += 1
+									d[cluster_in_dict.reverse_read()]['geneClusterObjects'].append(gene_cluster)
 
-									d[cluster_in_dict.read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.read()]['geneClusterObjects']) #!new
+									d[cluster_in_dict.reverse_read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.reverse_read()]['geneClusterObjects']) #!new
 
-									print('** On passe ici')
+
 									return True
 								if status=='reversed':
-									d[cluster_in_dict.read()]['n'] += 1
-									d[cluster_in_dict.read()]['geneClusterObjects'].append(reverse_gene_cluster)
+									d[cluster_in_dict.reverse_read()]['n'] += 1
+									d[cluster_in_dict.reverse_read()]['geneClusterObjects'].append(reverse_gene_cluster)
 
-									d[cluster_in_dict.read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.read()]['geneClusterObjects']) #!new
+									d[cluster_in_dict.reverse_read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.reverse_read()]['geneClusterObjects']) #!new
 
-									print('** On passe ici')
 									return True
 
 
