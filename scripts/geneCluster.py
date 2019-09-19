@@ -71,17 +71,29 @@ class geneCluster:
 				if val in other.cluster:
 			
 					# Les indices des element du deuxieme cluster (other) communs a ceux du premier gene cluster sont gardes
-					l3.append(other.cluster.index(val))
-					self.parent = other.read()
-
+					l3.append(other.cluster.index(val))					
 				else:
 					return False
 
 			# Here we test if the indices are consecutive 
 			if ( (l3[-1] - l3[0]) == (len(l3) - 1) ):
+				self.parent = other.read()
 				return True	
 			else:
-				return False
+				# Try again with the reversed small cluster 
+				l3=[]				
+				rev_small = self.reverse()
+				for i, val in enumerate(rev_small.cluster):
+					if val in other.cluster:
+						l3.append(other.cluster.index(val))
+					else:
+						return False
+				# Here we test if the indices are consecutive 
+				if ( (l3[-1] - l3[0]) == (len(l3) - 1) ):
+					self.parent = other.read()
+					return True
+				else:
+					return False
 
 	
 	def load(self, gene_list, strand_list):
@@ -111,9 +123,8 @@ class geneCluster:
 			if i == '-' or i == -1:
 				r_strand_2.append(1)
 
+		new = geneCluster(self.name + '_reversed')
 		
-		new_name = self.name + '_reversed'
-		new = geneCluster(new_name)
 
 		# keep other atributes
 		new.nb_genes = self.nb_genes
@@ -122,9 +133,8 @@ class geneCluster:
 		new.strain_name = self.strain_name
 		new.locus = self.locus
 		new.parent = self.parent	# Pour garder la trace des inclusions dans d'autres gene clusters
-
+	
 		new.load(r_cluster, r_strand_2)
-
 
 		return(new)
 

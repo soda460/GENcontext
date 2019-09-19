@@ -510,12 +510,12 @@ if __name__ == "__main__":
 			for sub_key, sub_value in value.items():
 
 				if sub_key == 'amr_found':
-					summary += sub_value + '\t'
+
 					detailed += '\n' + sub_value + '\t'
 
 				if sub_key == 'n':
-					print('regroupement de taille', sub_value)
-					summary += repr(sub_value) + '\t' + key + '\n'
+					print('Regroupement de taille', sub_value)
+
 					detailed += repr(sub_value) + '\t' + key + '\n'
 		
 				if sub_key == 'geneClusterObjects':
@@ -526,10 +526,6 @@ if __name__ == "__main__":
 
 
 				
-
-
-	with open('summary.txt', 'w') as file:
-		file.write(summary)
 
 
 
