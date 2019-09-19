@@ -17,6 +17,7 @@ class geneCluster:
 		self.molecule_name = []
 		self.strain_name = []
 		self.locus = []
+		self.parent = ""	# Pour garder la trace des inclusions dans d'autres gene clusters
 
 
 	def add(self, gene, strand):
@@ -71,6 +72,8 @@ class geneCluster:
 			
 					# Les indices des element du deuxieme cluster (other) communs a ceux du premier gene cluster sont gardes
 					l3.append(other.cluster.index(val))
+					self.parent = other.read()
+
 				else:
 					return False
 
@@ -108,15 +111,30 @@ class geneCluster:
 			if i == '-' or i == -1:
 				r_strand_2.append(1)
 
-
+		
 		new_name = self.name + '_reversed'
 		new = geneCluster(new_name)
+
+		# keep other atributes
+		new.nb_genes = self.nb_genes
+		new.amr_found =self.amr_found
+		new.molecule_name = self.molecule_name
+		new.strain_name = self.strain_name
+		new.locus = self.locus
+		new.parent = self.parent	# Pour garder la trace des inclusions dans d'autres gene clusters
+
 		new.load(r_cluster, r_strand_2)
+
 
 		return(new)
 
 		
-
+	def reverse_read(self):
+		"""Une methode pour lire le reverse complement du cluster"""
+		r_string=""		
+		reverse_object = self.reverse()
+		r_string = reverse_object.read()
+		return (r_string)
 
 
 
