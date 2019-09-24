@@ -66,31 +66,13 @@ class geneCluster:
 
 		if isinstance(other, self.__class__):
 			"""Pour s'assurer que le parametre passe a la fn appartienne a la classe geneCluster"""
-
-			for i, val in enumerate(self.cluster):
-				if val in other.cluster:
-			
-					# Les indices des element du deuxieme cluster (other) communs a ceux du premier gene cluster sont gardes
-					l3.append(other.cluster.index(val))					
-				else:
-					return False
-
-			# Here we test if the indices are consecutive 
-			if ( (l3[-1] - l3[0]) == (len(l3) - 1) ):
-				self.parent = other.read()
-				return True	
+			self_string = self.read()
+			other_string = other.read()
+			if self_string in other_string:
+				return True
 			else:
-				# Try again with the reversed small cluster 
-				l3=[]				
-				rev_small = self.reverse()
-				for i, val in enumerate(rev_small.cluster):
-					if val in other.cluster:
-						l3.append(other.cluster.index(val))
-					else:
-						return False
-				# Here we test if the indices are consecutive 
-				if ( (l3[-1] - l3[0]) == (len(l3) - 1) ):
-					self.parent = other.read()
+				r_self_string = self.reverse_read()
+				if r_self_string in other_string:
 					return True
 				else:
 					return False
