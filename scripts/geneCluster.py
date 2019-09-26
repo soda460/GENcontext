@@ -82,6 +82,8 @@ class geneCluster:
 		"""Methode pour loader des genes from scratch a partir d'une liste"""
 		self.cluster = gene_list
 		self.strand = strand_list
+		self.nb_genes = len(strand_list)
+
 
 	def get_size(self):
 		"""Methode pour avoir le nombre de genes"""
