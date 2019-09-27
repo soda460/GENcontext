@@ -30,7 +30,7 @@ from foreign_code import prepare_color_dict
 from foreign_code import digest_features
 from foreign_code import get_coord_gene
 from geneCluster import geneCluster
-
+from dock import dock
 
 # Programme principal
 
@@ -43,43 +43,103 @@ if __name__ == "__main__":
 
 	
 
-	b1 = geneCluster("medium")
-	b2 = geneCluster("mediumCopy")
+	# a0
+	a0 = geneCluster("a0")
+	geneList = ['A', 'B', 'C']
+	strandList = ['+','+','+']
+	a0.load(geneList, strandList)
+	print(a0.name + '\t' + a0.read())
 
-	c1 = geneCluster("large")
-	d1 = geneCluster("test")
-
-	r1 = geneCluster("envers")
 
 	# a1
-	a1 = geneCluster("small")
-	geneList = ['A', 'B', 'C', 'D', 'E', 'F']
-	strandList = ['+','+','+','+','+','+']
+	a1 = geneCluster("a1")
+	geneList = ['A', 'B', 'C']
+	strandList = ['+','+','+']
 	a1.load(geneList, strandList)
+	print(a1.name + '\t' + a1.read())
+
+	# r1
+	r1 = geneCluster("r1")
+	geneList = ['C', 'B', 'A']
+	strandList = ['-','-','-']
+	r1.load(geneList, strandList)
+	print(a1.name + '\t' + a1.read())
+
+
+
+
 
 	# b1
-	b1 = geneCluster("small like a1")
-	geneList = ['A', 'B', 'C1', 'D', 'E', 'F']
-	strandList = ['+','+','+','+','+','+']
+	b1 = geneCluster("b1")
+	geneList = ['A', 'B', 'C', 'D']
+	strandList = ['+','+','+','+']
 	b1.load(geneList, strandList)
 
+	# c1
+	c1 = geneCluster("c1")
+	geneList = ['A', 'B', 'C', 'D']
+	strandList = ['+','+','+','+']
+	c1.load(geneList, strandList)
+	c1.add('E', '+')
+	print(c1.name + '\t' + c1.read() + ' after the addition')
+	
 
-	if b1 != a1:
-		print('not equal')
+	# d1
+	d1 = geneCluster("d1")
+	geneList = ['A', 'C', 'D']
+	strandList = ['+','+','+']
+	d1.load(geneList, strandList)
 
 
 
-	print(a1.read())
+	print ('--Testing operator overloading--')
+
+	if a1 == b1:
+		print('c1 equal a1')
+	else:
+		print('c1 not equal a1')
+
+	if a0 != 1:
+		print('a0 not equal a1')
+	else:
+		print('a0 equal a1')
 
 
 
+	print ('--Testing isin fn--')
+
+
+	# a1 vs r1
+	if a1.isin(r1):
+		print ('yes a1 is in r1')
+	else:
+		print ('nope a1 is not in r1')
+	
+
+	# d1 vs a1
+	if d1.isin(a1):
+		print ('yes d1 is in a1')
+	else:
+		print ('nope d1 is not in a1')
 
 
 
+	# Tentons de travailler avec notre nouvelle classe : dock
+
+	my_dock = dock()
 
 
+	my_dock.add(a0)
+	my_dock.add(a1)
+	my_dock.add(c1)
+	my_dock.add(r1)
+
+	print('dock size\t' + str(my_dock.size))
+	print(my_dock.elems[3].cluster)		# marche!
 
 
+	# pour avoir le header
+	print(my_dock.head.cluster)		# marche!
 
 
 

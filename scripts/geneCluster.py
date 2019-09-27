@@ -42,10 +42,6 @@ class geneCluster:
 
 		return(s)
 
-
-
-
-
 	def __eq__(self, other):
 		"""Override the default Equals behavior"""
 		if isinstance(other, self.__class__):
@@ -62,8 +58,6 @@ class geneCluster:
 
 	def isin(self, other):
 		"""Methode pour tester si un regroupement de gene est inclus dans un autre"""
-		l3=[]	# a list to store list index :)
-
 		if isinstance(other, self.__class__):
 			"""Pour s'assurer que le parametre passe a la fn appartienne a la classe geneCluster"""
 			self_string = self.read()
@@ -76,7 +70,6 @@ class geneCluster:
 					return True
 				else:
 					return False
-
 	
 	def load(self, gene_list, strand_list):
 		"""Methode pour loader des genes from scratch a partir d'une liste"""
@@ -95,11 +88,11 @@ class geneCluster:
 		r_cluster=[]	# to hold the inverted cluster
 		r_strand=[]		# to hold the new polarity
 		
-		# use the reversed function to reverse the list
+		# Use the reversed function to reverse the list
 		r_cluster = list(reversed(self.cluster))
 		r_strand = list(reversed(self.strand))
 
-		# polariyy need to be changed (reverse complement)
+		# Polarity need to be changed (reverse complement)
 		r_strand_2 = []
 		for i in r_strand:
 			if i == '+' or i == 1:
@@ -110,14 +103,13 @@ class geneCluster:
 		new = geneCluster(self.name + '_reversed')
 		
 
-		# keep other atributes
+		# Keep other atributes
 		new.nb_genes = self.nb_genes
 		new.amr_found =self.amr_found
 		new.molecule_name = self.molecule_name
 		new.strain_name = self.strain_name
 		new.locus = self.locus
 		new.parent = self.parent	# Pour garder la trace des inclusions dans d'autres gene clusters
-	
 		new.load(r_cluster, r_strand_2)
 
 		return(new)
@@ -129,6 +121,13 @@ class geneCluster:
 		reverse_object = self.reverse()
 		r_string = reverse_object.read()
 		return (r_string)
+
+
+
+	
+
+
+
 
 
 
