@@ -89,7 +89,7 @@ if __name__ == "__main__":
 	geneList = ['A', 'C', 'D']
 	strandList = ['+','+','+']
 	d1.load(geneList, strandList)
-
+	print(d1.name + '\t' + d1.read())
 
 
 	print ('--Testing operator overloading--')

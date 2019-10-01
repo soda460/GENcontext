@@ -1,41 +1,38 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+__author__ = "Jean-Simon Brouard"
+__date__ = "2019-10-01"
+
 class dock:
-	"""Classe définissant un regroupement caractérisé par :
-	- son nom
-	- un HEAD, i.e. l'element dont un des attributs est le plus grand dans la liste (.size)"""
+	"""This simple class define dock objects which can be used to regroup similar gene clusters objects.
+	This class is defined by
+	- its name
+	- an HEAD, which is simply the geneCluster with the greatest number of genes"""
 
+	dock_id = 0		# This is a class attribute which is incremented when an instance of a dock object is created
 
-	"""Cette classe possède un attribut de classe qui s'incrémente à chaque fois que l'on crée un objet de ce type"""
-
-	dock_id = 0
-
-	
-
-
-
-	def __init__(self):				# Notre méthode constructeur
-
+	def __init__(self):
 		dock.dock_id += 1
-
 		self.name = 'cluster_' + repr(dock.dock_id)
 		self.head = []
-		self.elems = []
+		self.elems = []		# All related gene clusters objects will 
 		self.size = 0
 		
 	def add(self, geneCluster):
-		"""Methode pour ajouter un regroupement de genes a ce dock. Un tri se fait apres l'ajout
-		pour que les plus gros regroupement soient au debut (head). Cela empeche d'avoir a tester
-		tous les regroupements de gene. Si un regroupement est inclus dans le head (ou son inverse)
-		il le sera aussi dans tous les representants du dock """
 
-		L = []	# We will use this tp put the reverse sort result 
-			
+		"""This method allow to add a gene cluster to the dock. After the addition of a gene cluster, the list which contains the cluster
+			objects is reversely sorted according to the number of their genes. The cluster at the begining of the list become the new HEAD.
+			This is extremely useful because to regroup gene clusters by relatedness, we just have to test the inclusion of a gene cluster
+			in the HEAD. """
+
+		L = []
 		self.size += 1
 		self.elems.append(geneCluster)
-
 		L = sorted(self.elems, key=lambda x: x.nb_genes, reverse=True)		
-		self.elems = L
-		self.head = L[0]
+		self.elems = L		# Replace the list in the object by the reversed sorted list
+		self.head = L[0]	# Place the HEAD
 		return
+
+
+	# We could add method get_name, get_size and pretty_read in the future.

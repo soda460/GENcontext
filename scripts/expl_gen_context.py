@@ -31,7 +31,7 @@ from foreign_code import prepare_color_dict
 from foreign_code import digest_features
 from foreign_code import get_coord_gene
 from geneCluster import geneCluster
-
+from dock import dock
 
 
 def get_gbk_files(start_dir):
@@ -238,173 +238,20 @@ def extract_gene_cluster (record):
 
 
 
-def strange_sort(L):
-	"""This function sort a list of gene cluster objets according to ther size (nb genes)
-	"""
-	newlist = sorted(L, key=lambda x: x.nb_genes, reverse=True)
-	return newlist
-
-def cluster_Gene_clusters(gene_cluster):
-	"""This function will try to classify a cluster into an appropriate entry in a dictionnary d
-	Pour que cette fn soit efficace, il faut 'envoyer' les gene clusters a regrouper en ordre
-	decroissant de taille, de maniere a ce que les plus gros regroupements se forment, puis que
-	ceux qui sont identiques ou plus petits mais compatibles s'y ajoutent.
-	"""
-
-	s = ""
-	s = gene_cluster.read()
-
-	# check if we have an entry for that particular gene cluster
-	if s in d:
-		d[s]['n'] += 1
-		d[s]['geneClusterObjects'].append(gene_cluster)
-		#print ("--> Incrementing an existing gene cluster")
-		return
-
-	# remember ; for all the following there is no entry	
-	else:
-
-		# Try if the reverse complement of the cluster match an entry in the dict
-		reverse_gene_cluster = gene_cluster.reverse()
-		r = ""
-		r = reverse_gene_cluster.read()
-		if r in d:
-			print ('--> Adding a reverse gene cluster to an existing category yeah!')
-
-			# We count this cluster and add relative info in the entry of the 'unreversed' cluster
-			d[r]['n'] += 1
-			d[r]['geneClusterObjects'].append(gene_cluster)
 
 
-
-			return
-
-		# other investigations , check if the cluster is included in another cluster(larger)
-		else:
-
-			a = check_if_included_in_larger_gene_cluster(gene_cluster, 'normal')
-			if a:
-				print (" --> Including a gene cluster into an existing cluster of gene clusters")
-				return
-
-			b = check_if_included_in_larger_gene_cluster(reverse_gene_cluster, 'reverse')
-			if b:
-				print (" --> Including a reversed gene cluster into an existing cluster of gene clusters")
-				return
-
-			# All other cases			
-			print ('--> Adding a new gene cluster')
-			d[s] = {}
-			d[s]['amr_found'] = gene_cluster.amr_found
-			d[s]['n'] = 1
-			d[s]['geneClusterObjects'] = [gene_cluster]
-			return
-
-
-
-
-def check_if_included_in_larger_gene_cluster(gene_cluster, status):
-
-	reverse_gene_cluster = gene_cluster.reverse()
-
-	# boucler sur tous les clusters presents dans le dict d | un dictionnaire ordinaire
-	for key, value in d.items():
-		for sub_key, sub_value in value.items():
-			if sub_key == 'geneClusterObjects':
-				for cluster_in_dict in sub_value:
-					if gene_cluster.isin(cluster_in_dict):
-						
-
-						# Check if the cluster examined is directly the prototype of a larger cluster 
-						if cluster_in_dict.read() in d:
-							#print ('clus.read()' + '\t', end='')
-							#print (cluster_in_dict.read())
-							#print ('gene_cluster.read()' + '\t', end='') 
-							#print (gene_cluster.read())
-
-							if status=='normal':
-								d[cluster_in_dict.read()]['n'] += 1
-								d[cluster_in_dict.read()]['geneClusterObjects'].append(gene_cluster)
-							
-								d[cluster_in_dict.read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.read()]['geneClusterObjects']) #!new
-
-								return True
-
-							if status=='reversed':
-								d[cluster_in_dict.read()]['n'] += 1
-								d[cluster_in_dict.read()]['geneClusterObjects'].append(reverse_gene_cluster)
-
-								d[cluster_in_dict.read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.read()]['geneClusterObjects']) #!new
-
-								return True
-
-
-						else:
-
-							# The following situation occurs occassionnaly when the examined gene cluster is found to be included in another gene cluster
-							# (beacause we iterate on all members of all clusters of gene clusters) and that the representative of this group is reversed
-							# For example consider a cluster of gene clusters with the key abcde in dictionnay d
-							# The cluster could contain many representatives [abcde, abcde, abcde, edcba]
-							# If the examined gene cluster is edc it would be found to be included in edcab
-							# We therefore need to increase the counter of this group and add edc to the list of gene cluster objects
-							# If we try to write in d with the key edcba, we would get a key error because the cluster of gene clusters
-							# is labeled with abcde. This is why we will use the revese_read() fn to access the appropriate key.
-							if cluster_in_dict.reverse_read() in d:
-								if status=='normal':
-									d[cluster_in_dict.reverse_read()]['n'] += 1
-									d[cluster_in_dict.reverse_read()]['geneClusterObjects'].append(gene_cluster)
-
-									d[cluster_in_dict.reverse_read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.reverse_read()]['geneClusterObjects']) #!new
-
-
-									return True
-								if status=='reversed':
-									d[cluster_in_dict.reverse_read()]['n'] += 1
-									d[cluster_in_dict.reverse_read()]['geneClusterObjects'].append(reverse_gene_cluster)
-
-									d[cluster_in_dict.reverse_read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.reverse_read()]['geneClusterObjects']) #!new
-
-									return True
-
-
-							else:
-								# The following situation occurs occassionnaly when one cluster is found to included in another gene cluster
-								# which is not the representative of the cluster of gene clusters (because the latter is not the full length
-								# version of the group. To handle it, we use the parent attribute which is assigned when one cluster was found to be included
-								# in another one (see the Class geneCluster).
-								if status=='normal':
-									d[cluster_in_dict.parent]['n'] += 1
-									d[cluster_in_dict.parent]['geneClusterObjects'].append(gene_cluster)
-
-									d[cluster_in_dict.parent]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.parent]['geneClusterObjects']) #!new
-
-									return True
-
-								if status=='reversed':
-									d[cluster_in_dict.parent]['n'] += 1
-									d[cluster_in_dict.parent]['geneClusterObjects'].append(reverse_gene_cluster)
-
-									d[cluster_in_dict.parent]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.parent]['geneClusterObjects']) #!new
-
-									return True
-
-
-
-
-# Programme principal
+# Main program
 
 if __name__ == "__main__":
 
 	""" The program will find gbk files and will produce one features list per gbk file""" 
 
-	# Dict of gene clusters
-	#d = {}
-	d = OrderedDict()
-
-	# List of geneCluster objects
-	L = []
+	
+	L = []				# List of geneCluster objects	
+	DockList = []		# List of dock objects. A dock is a group of related gene clusters (see geneCluster.py)!
 
 	# Parsing arguments
+
 	amr_in = sys.argv[1]	# There is a subtle diff between amr_in (ex. 'TEM' and amr_found (TEM-1 or TEM-212)
 	folder = sys.argv[2]
 	nb_genes_in_context = int(sys.argv[3])
@@ -464,74 +311,42 @@ if __name__ == "__main__":
 				L.append(my_gene_cluster)
 
 
-	# Sort geneCluster objects according to their size
-	newlist = sorted(L, key=lambda x: x.nb_genes, reverse=True)
+	# Sorting geneCluster objects according to their size
+	L2 = sorted(L, key=lambda x: x.nb_genes, reverse=True)
 		
-	
 
+	# Step 1 ; Place the first cluster in an first Dock object
+	very_first_cluster = L2.pop(0)
+	my_dock = dock()
+	my_dock.add(very_first_cluster)	
+	DockList.append(my_dock)		# Add the dock to the dock list
 
-	for c in newlist:
-
-		# print (c.read())
-		# Verification que mes objects sont bien en ordre descendants de taille
-		# print(c.nb_genes, c.name, c.cluster)
-
-		# This will modify d a dictionnary
-		# Here we cluster similar or identical gene clusters
-
-		print('Dealing with-->' + c.read() + '<--')
-		cluster_Gene_clusters(c)
-
-	
-				
-
-
-	# we have a cool dictionnay d and we want to sorted it by the reverse order of the frequency of clusters
-	# We can do the following, but this will give just a list with our desired sorted keys
-	# Used at line 505
-	sorted_keys = sorted(d, key=lambda x: (d[x]['n']), reverse=True)
-
-
-	# After some stackoverflow searches, I,ve found the magic command that allow to create an OrderedDict object
-	# that will remember the insertion order of the items. We want to create the keys in reverse order of ['n']
-	# which is the number of occurence of the clusters
-
-	d2 = OrderedDict(sorted(d.items(), key=lambda x: x[1]['n'], reverse=True))
-	
-
-	# For output...
-	detailed='Gene found' + '\t' + 'Number of instances' + '\t' + 'Cluster' + '\t' + 'Strain name' + '\t' + 'Molecule' + '\t' + 'Locus' + '\t' + 'Nb genes in cluster' + '\n'
-	summary='Gene found' + '\t' + 'Number of instances' + '\t' + 'Cluster' + '\n'
-
-
-	# Passe au travers du dictio 	
-	for key, value in d2.items():
-		if isinstance(value, dict):
-			for sub_key, sub_value in value.items():
-
-				if sub_key == 'amr_found':
-
-					detailed += '\n' + sub_value + '\t'
-
-				if sub_key == 'n':
-					print('Regroupement de taille', sub_value)
-
-					detailed += repr(sub_value) + '\t' + key + '\n'
+	# Step 2 - All other clusters need to be grouped
+	for c_index, c_value in enumerate(L2):
 		
-				if sub_key == 'geneClusterObjects':
-					for clus in sub_value:
+		# Try to put that cluster in an existing dock object
+		for d in DockList:
 
-						print(clus.read(), clus.name, clus.nb_genes, clus.strain_name)
-						detailed += '\t\t' + clus.read() + '\t' + clus.strain_name + '\t' + clus.molecule_name + '\t' + clus.locus + '\t' + repr(clus.nb_genes) + '\n'
+			if c_value.isin(d.head):	# Check if the cluster examined can be inclued in the HEAD of a dock instance
+				d.add(c_value)			# If True, the gene cluster is add to the dock
+
+				print ('-->' + c_value.read() + ' has been add to ' + repr(d.name) + ' whose HEAD is : ' + d.head.read())
+				break
+		
+		else:
+			print ('--> Create new dock items with' + c_value.read())
+			new_dock = dock()
+			new_dock.add(c_value)
+			DockList.append(new_dock)	# Add the dock object to the list
+
+	print ('---Final output----')
+	for dock_item in DockList:
+		print (dock_item.name + '\t' + 'size:' + repr(dock_item.size) + '\t' + 'HEAD: ' + dock_item.head.read())
+		for c in dock_item.elems:
+			print (c.read() + '\t' + c.locus + '\t' + c.strain_name + '\t' + c.name)
 
 
-				
 
-
-
-	
-	with open('detailed.txt', 'w') as file:
-		file.write(detailed)
 
 
 
