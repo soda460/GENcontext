@@ -341,12 +341,16 @@ if __name__ == "__main__":
 
 	print ('---Final output----')
 	for dock_item in DockList:
-		print (dock_item.name + '\t' + 'size:' + repr(dock_item.size) + '\t' + 'HEAD: ' + dock_item.head.read())
+		print (dock_item.name + '\t' + 'size:' + repr(dock_item.size) + '\t' + 'HEAD: ' + dock_item.head.pretty_read())
 		for c in dock_item.elems:
 			print (c.read() + '\t' + c.locus + '\t' + c.strain_name + '\t' + c.name)
 
+	print ('---Very summarized output----')
+	for dock_item in DockList:
+		print (dock_item.name + '\t' + 'size:' + repr(dock_item.size) + '\t' + 'HEAD: ' + dock_item.head.pretty_read())
 
-
-
+	print ('---Just HEAD names ----')
+	for dock_item in DockList:
+		print (dock_item.head.pretty_read())
 
 

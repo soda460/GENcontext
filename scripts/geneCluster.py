@@ -41,6 +41,24 @@ class geneCluster:
 
 		return(s)
 
+
+	def pretty_read(self):
+		"""This method allow to read the gene content of a cluster ignoring unknown genes . """
+		s = ""
+		for i,j in zip(self.cluster, self.strand):
+			if i == '?':
+				continue
+			
+
+			if (j == 1 or j == '+'):
+				s = s + '5\'-' + i + '-3\' '
+
+			if (j == -1 or j == '-'):
+				s = s + '3\'-' + i + '-5\' '
+
+		return(s)
+
+
 	def __eq__(self, other):
 		"""Override the default Equals behavior"""
 		if isinstance(other, self.__class__):
@@ -56,14 +74,28 @@ class geneCluster:
 
 
 	def isin(self, other):
-		"""Method to test if a gene cluster is inclued in another gene cluster. The method will also test the reverse complement. """
+		"""Method to test if a gene cluster is inclued in another gene cluster. The method will also test the reverse complement.
+			Note that the presence of unknown genes (e.g. 5'-?-3' or 3'-?-5' will be ignored.)
+		"""
 		if isinstance(other, self.__class__):	# To be sure that the passed argument belong to class geneCluster
-			self_string = self.read()
-			other_string = other.read()
+
+			# Create temporary objects to test the inclustion in clusters where Unknown genes have been replaced
+			self_like = geneCluster('bid')
+			other_like = geneCluster('bid')
+			
+			# proceed to the removal of unknown genes with the remove method
+			self_like = self.remove('?')
+			other_like = other.remove('?')		
+
+
+			self_string = self_like.read()
+			other_string = other_like.read()
+			r_self_string = self_like.reverse_read()
+
 			if self_string in other_string:
 				return True
 			else:		
-				r_self_string = self.reverse_read()
+
 				if r_self_string in other_string:
 					return True
 				else:
@@ -75,6 +107,22 @@ class geneCluster:
 		self.cluster = gene_list
 		self.strand = strand_list
 		self.nb_genes = len(strand_list)
+
+
+	def remove(self, gene_to_remove):
+		"""Method to remove correctly sepcific genes from gene clusters, typically unknown genes"""
+		new = geneCluster(self.name + '_edited')
+		for i, gene in enumerate(self.cluster):
+			if gene != gene_to_remove:
+				new.add(gene, self.strand[i])
+		return(new)
+
+
+
+
+
+
+
 
 
 	def get_size(self):

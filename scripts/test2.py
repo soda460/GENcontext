@@ -63,7 +63,21 @@ if __name__ == "__main__":
 	geneList = ['C', 'B', 'A']
 	strandList = ['-','-','-']
 	r1.load(geneList, strandList)
-	print(a1.name + '\t' + a1.read())
+	print(r1.name + '\t' + r1.read())
+
+	# u0
+	u0 = geneCluster("u0")
+	geneList = ['C', '?', 'A']
+	strandList = ['-','-','-']
+	u0.load(geneList, strandList)
+	print(u0.name + '\t' + u0.read())
+
+	# u00
+	u00 = geneCluster("u00")
+	geneList = ['C', '?', '?', 'A']
+	strandList = ['-','-','-','-']
+	u00.load(geneList, strandList)
+	print(u00.name + '\t' + u00.read())
 
 
 
@@ -123,6 +137,8 @@ if __name__ == "__main__":
 		print ('nope d1 is not in a1')
 
 
+	
+
 
 	# Tentons de travailler avec notre nouvelle classe : dock
 
@@ -142,9 +158,17 @@ if __name__ == "__main__":
 	print(my_dock.head.cluster)		# marche!
 
 
+	print ('testing remove function')
+	new_obj_after_removal = u0.remove('?')
+	print (new_obj_after_removal.read())
 
 
-
+	print ('testing inclusion function')
+	# test u0 in u00 (because unknown genes are ignored it should be included)
+	if u0.isin(u00):
+		print ('yes u0 is in u00')
+	else:
+		print ('nope u0 is not in u00')
 
 
 
