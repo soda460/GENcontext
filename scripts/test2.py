@@ -173,6 +173,24 @@ if __name__ == "__main__":
 
 
 
+	fromages = ['Cheddar', 'Fin renard', 'brocoli', 'Suisse', 'Gruyere', 'Gouda', 'Emmenthal', 'Brie', 'Oka', 'Camembert', 'Crottes', 'Riopelle']
+
+
+
+	index = 4
+
+
+
+	for i in range(index, 0, -1):
+		#print (fromages[i])
+
+	
+	for i in range(index, 7, 1):
+		print (fromages[i])
+
+
+
+
 
 
 

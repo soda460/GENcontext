@@ -140,60 +140,101 @@ def get_metadata(f, out_list):
 
 
 def splice_record(index, record, features_range):
-	"""This function will try to get features around a given feature"""
+	"""This function get features around a given target feature index ignoring unknown genes in the same way than the
+	the extract_gene_cluster function	
+	"""
+	nb_features = len(record.features)
+	#print("inside fn \n nb feats:" + repr(nb_features) + ' ' + record.name)
+
+	''' The following code will count 'true' genes after the targeted AMR gene (index of record is given actually)'''
+	right_index = 0
+	left_index = 0
+	upstream_genes = 0
+	downstream_genes = 0
 
 
-	# to print the entire record
-	# print(record.features[index])
+	# Block A: Searching downstream of the targeted index
+	for i_feat, feature in enumerate(record.features[index + 1:], start=index + 1):
 
-	nb_features = len(record.features)		# number of features in the record
+		if downstream_genes >= features_range:		# End condition		
+			right_index = i_feat -1					# Because it iterate one more time before break
+			break
 
-	# Math pour savoir la plage de feature qui sera consideree
-	upper_bound = index + features_range
+		if feature.type == 'CDS':					# We focus on high quality CDS
+			flagGeneDraw = 'FALSE'
+			#print('ifeat:' + repr(i_feat) + ' feature: ' + repr(feature))
 
-	# if the index is too close from the end, the upper_bound will be nb_features minus 1 (0-indexed)
-	upper_bound = min(upper_bound, (nb_features - 1))	
+			# Block A1 'True' genes are grabed if annotated by CARD or labeled with ISfinder
+			if 'inference' in feature.qualifiers:					
+				for inf in feature.qualifiers['inference']:		# In some cases, more than one inference tag are present in gbk file.
+					if "protein_fasta_protein_homolog_model" in inf:
+						flagGeneDraw = 'TRUE'
+						downstream_genes += 1
+						break
+			
+					if "ISfinder" in inf:		
+						flagGeneDraw = 'TRUE'
+						downstream_genes += 1
+						break
 
-	lower_bound = index - features_range
+			# Otherwise, continue searching for high-quality CDS, which have a \gene tag
+			if flagGeneDraw == 'FALSE':
+				if 'locus_tag' in feature.qualifiers:
+					if 'gene' in feature.qualifiers:
+						flagGeneDraw = 'TRUE'
+						downstream_genes += 1
 
-	# if the index is too close from the start, the lower_bound will be 0
-	if (lower_bound <= 0):
-		lower_bound = 1		# !!! Because the first feature is usually source and it describes the whole molecule
+	# Block B: Searching upstream of the targeted index
+	''' We use enumarate on the elements before the targeted genes, then the built-in reversed fn and the orginal iterators!'''
+	for i_feat, feature in reversed(list(enumerate(record.features[:index -1] ))):
 
-
-	# s = "Feature range will be " + repr(lower_bound) + ":" + repr(upper_bound)
-	# print(s)
-
+		if upstream_genes >= features_range:		# End condition		
+			left_index = i_feat +1	# because the list is reversed and that the indices are the orginal ones 
+			break
 	
+		if feature.type == 'CDS':
+			flagGeneDraw = 'FALSE'
+			#print('ifeat:' + repr(i_feat) + ' feature: ' + repr(feature))
+			if 'inference' in feature.qualifiers:					
+				for inf in feature.qualifiers['inference']:		# In some cases, more than one inference tag are present in gbk file.
+					if "protein_fasta_protein_homolog_model" in inf:
+						flagGeneDraw = 'TRUE'
+						upstream_genes += 1
+						break
+			
+					if "ISfinder" in inf:		
+						flagGeneDraw = 'TRUE'
+						upstream_genes += 1
+						break
+
+			# Continue searching if not found in the last block
+			if flagGeneDraw == 'FALSE':
+				if 'locus_tag' in feature.qualifiers:
+					if 'gene' in feature.qualifiers:
+						flagGeneDraw = 'TRUE'
+						upstream_genes += 1
+
 	'''
-	Voici les qualifiers disponibles
-	locus_tag
-	codon_start
-	inference
-	translation
-	transl_table
-
-	location n'en fait pas partie
-
-	Pour acceder au coordonnes en nucletotide du
+	To access to nucletotide coords of the feature; do : 
 	print (record.features[index].location.start)
-	
 	https://biopython.org/DIST/docs/api/Bio.SeqFeature.FeatureLocation-class.html
-	En somme pour acceder aux elements on a les methodes start, end, et strand
+	Other qualifiers for location are : start, end, strand
+	Note that the start and end location numbering follow Python's scheme, thus a GenBank entry of 123..150 (one based counting)
+	becomes a location of [122:150] (zero based counting).
 	'''
+	lower_pos = record.features[left_index].location.start
+	upper_pos = record.features[right_index].location.end
 
-	'''Note that the start and end location numbering follow Python's scheme, thus a GenBank entry of 123..150 (one based counting)
-	becomes a location of [122:150] (zero based counting).'''
-
-	lower_pos = record.features[lower_bound].location.start
-	upper_pos = record.features[upper_bound].location.end
-
-	# s = "Original record will be spliced at positions " + repr(lower_pos) + ":" + repr(upper_pos)
-	# print(s)
+	s = "Original record will be spliced at positions " + repr(lower_pos) + ":" + repr(upper_pos)
+	print(s)
 
 	sub_record = record[lower_pos:upper_pos]
-
 	return (sub_record)
+
+
+
+
+
 
 
 def extract_gene_cluster (record):
@@ -296,6 +337,8 @@ if __name__ == "__main__":
 				# Splice the record where an AMR gene has been found
 				sub_rec = splice_record(amr_index, amr_record, nb_genes_in_context)
 
+
+
 				# Obtain a GeneCluster object from a subrecord 
 				my_gene_cluster = extract_gene_cluster(sub_rec)
 
@@ -352,5 +395,7 @@ if __name__ == "__main__":
 	print ('---Just HEAD names ----')
 	for dock_item in DockList:
 		print (dock_item.head.pretty_read())
+
+
 
 
