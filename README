@@ -1,3 +1,9 @@
 17/09/2019
 
-The goal of this tool is to discover the gene organization around specific genes (for example antibiotic resistance genes) in annotation files.
+The goal of this tool is to discover the gene organization around specific genes in annotation files. For now, solely the the Genbank format is supported.
+
+It was designed to find the genetic context around antibiotic resistance gene which are annotated very specifically in Genbank files. The main drawback of this tool is therefore that you have to follow a specific procedure to annotate your antibiotic resistance genes files. Briefly, the procedure require to use PROKKA with a custom database (namely the reference CARD database).
+The produre is well described here (put link here).
+
+
+
