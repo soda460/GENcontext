@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
 
 	for i in range(index, 0, -1):
-		#print (fromages[i])
+		print (fromages[i])
 
 	
 	for i in range(index, 7, 1):
