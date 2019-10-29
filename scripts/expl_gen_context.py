@@ -226,7 +226,7 @@ def splice_record(index, record, features_range):
 	upper_pos = record.features[right_index].location.end
 
 	s = "Original record will be spliced at positions " + repr(lower_pos) + ":" + repr(upper_pos)
-	print(s)
+	#print(s)
 
 	sub_record = record[lower_pos:upper_pos]
 	return (sub_record)
@@ -279,7 +279,19 @@ def extract_gene_cluster (record):
 
 
 
+def check_arg_orientation(gene_cluster, amr_found):
+	"""This function will check if the antibiotic resistance gene of the given gene cluster is in the 5' 3' orientation"""
 
+	s='5\'-' + amr_found + '-3\''
+
+	if s in gene_cluster.read():
+			return	gene_cluster	# Already in the right orientation
+	else:
+		if s in gene_cluster.reverse_read():
+			reversed_gene_cluster = gene_cluster.reverse()
+			return reversed_gene_cluster
+		else:
+			print ('Big bug!')
 
 # Main program
 
@@ -349,9 +361,11 @@ if __name__ == "__main__":
 				my_gene_cluster.molecule_name=molecule_name
 				my_gene_cluster.strain_name=strain_name
 
+				# if not put my gene cluster in the proper orientation relative to amr_in
+				returned_cluster = check_arg_orientation(my_gene_cluster, amr_found)
 
 				# Simply put the GeneCluster object in a list
-				L.append(my_gene_cluster)
+				L.append(returned_cluster)
 
 
 	# Sorting geneCluster objects according to their size
@@ -360,8 +374,8 @@ if __name__ == "__main__":
 
 	# Step 1 ; Place the first cluster in an first Dock object
 	very_first_cluster = L2.pop(0)
-	my_dock = dock()
-	my_dock.add(very_first_cluster)	
+	my_dock = dock()		# When initializing a dock object, we need to pass the targeted_gene
+	my_dock.add(very_first_cluster)
 	DockList.append(my_dock)		# Add the dock to the dock list
 
 	# Step 2 - All other clusters need to be grouped

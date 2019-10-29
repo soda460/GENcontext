@@ -14,10 +14,11 @@ class dock:
 
 	def __init__(self):
 		dock.dock_id += 1
-		self.name = 'cluster_' + repr(dock.dock_id)
+		self.name = 'dock_' + repr(dock.dock_id)
 		self.head = []
 		self.elems = []		# All related gene clusters objects will 
 		self.size = 0
+		self.reversed = 'no'	# by default the gene cluster is not reversed!
 		
 	def add(self, geneCluster):
 

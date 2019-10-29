@@ -48,29 +48,34 @@ if __name__ == "__main__":
 	geneList = ['A', 'B', 'C']
 	strandList = ['+','+','+']
 	a0.load(geneList, strandList)
-	print(a0.name + '\t' + a0.read())
+	print('a0: ' + a0.name + '\t' + a0.read())
 
 
-	# a1
-	a1 = geneCluster("a1")
-	geneList = ['A', 'B', 'C']
-	strandList = ['+','+','+']
-	a1.load(geneList, strandList)
-	print(a1.name + '\t' + a1.read())
+	# copy the object a0 and rename it
+	a1 = a0
+	a1.name = 'a1_a_copy_of_a0'
+	print('a1: ' + a1.name + '\t' + a1.read())
 
 	# r1
-	r1 = geneCluster("r1")
-	geneList = ['C', 'B', 'A']
-	strandList = ['-','-','-']
-	r1.load(geneList, strandList)
-	print(r1.name + '\t' + r1.read())
+	#r1 = geneCluster("r1")
+	#geneList = ['C', 'B', 'A']
+	#strandList = ['-','-','-']
+	#r1.load(geneList, strandList)
+
+	r1 = a0.reverse()
+	r1.name =('inverted_a0') 
+	print('r1: ' + r1.name + '\t' + r1.read())
+
+
+
 
 	# u0
 	u0 = geneCluster("u0")
 	geneList = ['C', '?', 'A']
 	strandList = ['-','-','-']
 	u0.load(geneList, strandList)
-	print(u0.name + '\t' + u0.read())
+	print('read method: ' + u0.name + '\t' + u0.read())
+	print('pretty_read method: ' + u0.name + '\t' + u0.pretty_read())
 
 	# u00
 	u00 = geneCluster("u00")
@@ -90,10 +95,9 @@ if __name__ == "__main__":
 	b1.load(geneList, strandList)
 
 	# c1
-	c1 = geneCluster("c1")
-	geneList = ['A', 'B', 'C', 'D']
-	strandList = ['+','+','+','+']
-	c1.load(geneList, strandList)
+	c1 = a0
+	c1.name='c1'
+	c1.add('D', '+')
 	c1.add('E', '+')
 	print(c1.name + '\t' + c1.read() + ' after the addition')
 	
@@ -113,7 +117,7 @@ if __name__ == "__main__":
 	else:
 		print('c1 not equal a1')
 
-	if a0 != 1:
+	if a0 != a1:
 		print('a0 not equal a1')
 	else:
 		print('a0 equal a1')
