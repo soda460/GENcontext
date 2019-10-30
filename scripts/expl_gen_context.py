@@ -15,7 +15,7 @@ __date__ = "2019-09-17"
 import sys
 import os
 from pathlib import Path
-#from Bio.Graphics import GenomeDiagram
+from Bio.Graphics import GenomeDiagram
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from io import StringIO
@@ -238,12 +238,14 @@ def splice_record(index, record, features_range):
 
 
 def extract_gene_cluster (record):
-	"""This function will give gene cluster and orientations"""
+	"""This function will give gene cluster and orientations
+	The function will also put the record into an attribute of the cluster object
+	"""
 
 	# Use our own class geneCluster
 
 	a = geneCluster(record.name)	
-
+	a.record = record	# We put a seqRecord object in our cluster object
 	for feature in record.features:
 		if feature.type == 'CDS':		# We use the CDS fields
 			flagGeneDraw = 'FALSE'		# Initialize this 'Boolean'!
@@ -274,13 +276,13 @@ def extract_gene_cluster (record):
 						a.add(my_gene, feature.strand)
 					else:
 						my_gene= '?'
-						a.add(my_gene, feature.strand)
+						a.add(my_gene, feature.strand)	
 	return (a)
 
 
 
 def check_arg_orientation(gene_cluster, amr_found):
-	"""This function will check if the antibiotic resistance gene of the given gene cluster is in the 5' 3' orientation"""
+	"""This function will check if the antibiotic resistance gene of the given gene cluster is in the 5' 3' orientation."""
 
 	s='5\'-' + amr_found + '-3\''
 
@@ -291,7 +293,76 @@ def check_arg_orientation(gene_cluster, amr_found):
 			reversed_gene_cluster = gene_cluster.reverse()
 			return reversed_gene_cluster
 		else:
-			print ('Big bug!')
+			print ('This should not happen!')
+
+
+def add_blank_tracks(gd_diagram, n):
+	""" This function will create additionnal blank tracks to equilibrate the diagrams.
+		When few track are present, this prevent tracks to use a lot of vertical space in the page.
+	"""
+	for i in range (n):
+		gd_track_for_features = gd_diagram.new_track(1, name='void', greytrack=False, start=0, height=1, end = 0, scale=1, hide=1)
+
+		# Create an empty set of features. The newly created set is linked to the abovementionned track
+		gd_feature_set = gd_track_for_features.new_set()
+	return
+
+
+def recursive_draw_with_genomeDiagram(dock, clusters_per_page):
+	""" This recursive function will draw one genome diagram each until all gene clusters are draw."""
+	if dock.draw >= dock.size:	# End condition
+		return
+
+	cwd = os.getcwd()
+	# Create alphabet list of uppercase letters
+	alphabet = []
+	for letter in range(65, 91):
+		alphabet.append(chr(letter))
+
+	fn_colors = prepare_color_dict()	# a small dictionnary that associate colors to gene categories
+	iterare = round(dock.draw/clusters_per_page) + 1	# to known how many times the function have been called
+
+	''' Get the next clusters that were not already draw. They are stored (in reverse order of size) in the dock object'''
+	next_clusters = []
+	next_clusters = dock.elems[dock.draw:(dock.draw + clusters_per_page)]
+
+	# Creation of the genomeDiagram object for that call
+	gd_diagram = GenomeDiagram.Diagram(dock.name + '_' + repr(iterare))
+
+	# For each geneClusters, we will create a track, add features, etc!
+	for geneCluster in next_clusters:
+
+		name = geneCluster.record.annotations["source"]		# !need to fix this to ensure that we have a good label above each track!
+	
+		''' It is important to get the longest gbk record to keep proportionarity between clusters present on different diagrams
+		but belonging to the same dock. It is why, this value is put into a dock attribute.
+		'''
+		dock.max_cluster_len = max(dock.max_cluster_len, len(geneCluster.record))
+
+		# Adding a track; each track being a different geneCluster
+		gd_track_for_features = gd_diagram.new_track(1, name=geneCluster.record.name, greytrack=True, start=0, height=1, end = len(geneCluster.record), scale=1, scaleticks=0)
+
+		# Create an empty set of features linked to the newly created track
+		gd_feature_set = gd_track_for_features.new_set()
+
+
+		''' This is our home-made fn to fill the features set with stuff like genes colored according to categories,
+		specific label for AMR genes, etc! Inside the function digest_feature, there are many calls to gd_feature_set.add_feature
+		'''
+		gd_feature_set = digest_features(geneCluster.record, fn_colors, gd_feature_set)
+
+	# Calculate the number of needed blanck tracks and add them
+	n_blank_tracks = clusters_per_page - len(next_clusters)
+	add_blank_tracks(gd_diagram, n_blank_tracks)
+
+	gd_diagram.draw(format="linear", orientation="landscape", fragments=1, start=0, end=dock.max_cluster_len, track_size=0.75, tracklines=0)
+	gd_diagram.write(cwd + '/output_' + sys.argv[1] + '/maps/' + dock.name  + '_page' + repr(iterare) + '_linear.pdf', "PDF")
+
+	# Update the dock.draw counter
+	dock.draw += clusters_per_page
+
+	recursive_draw_with_genomeDiagram(dock, clusters_per_page)
+
 
 # Main program
 
@@ -348,6 +419,11 @@ if __name__ == "__main__":
 
 				# Splice the record where an AMR gene has been found
 				sub_rec = splice_record(amr_index, amr_record, nb_genes_in_context)
+				
+				""" As mentionned in the Biopython tutorial : "The SeqRecord slicing step is cautious in what annotation it preserves [...]
+				To keep the database cross references or the annotations dictionary, this must be done explicitly"
+				"""
+				sub_rec.annotations = amr_record.annotations.copy()
 
 
 
@@ -387,14 +463,43 @@ if __name__ == "__main__":
 			if c_value.isin(d.head):	# Check if the cluster examined can be inclued in the HEAD of a dock instance
 				d.add(c_value)			# If True, the gene cluster is add to the dock
 
-				print ('-->' + c_value.read() + ' has been add to ' + repr(d.name) + ' whose HEAD is : ' + d.head.read())
+				#print ('-->' + c_value.read() + ' has been add to ' + repr(d.name) + ' whose HEAD is : ' + d.head.read())
 				break
 		
 		else:
-			print ('--> Create new dock items with' + c_value.read())
+			#print ('--> Create new dock items with' + c_value.read())
 			new_dock = dock()
 			new_dock.add(c_value)
 			DockList.append(new_dock)	# Add the dock object to the list
+
+
+
+	# make folders if folder for strain does not exists
+	cwd = os.getcwd()
+
+	# Create output directory
+	if not os.path.exists(cwd + '/output_' + sys.argv[1]):
+		os.mkdir(cwd + '/output_' + sys.argv[1])
+
+
+	if not os.path.exists(cwd + '/output_' + sys.argv[1] + '/maps'):
+		os.mkdir(cwd + '/output_' + sys.argv[1] + '/maps')
+
+
+
+	""" We will pass a dock object to a fn that will draw nice diagrams of the geneClusters present in that dock"""
+	for dock_item in DockList:
+		recursive_draw_with_genomeDiagram(dock_item, 8)		# 8 a good value for letter
+
+
+
+	my_string = "label\tvelo\t"
+
+	f = open(cwd + '/output_' + sys.argv[1] + '/csvfile.csv','w')
+	f.write(my_string)
+	f.close()
+
+
 
 	print ('---Final output----')
 	for dock_item in DockList:
@@ -406,9 +511,9 @@ if __name__ == "__main__":
 	for dock_item in DockList:
 		print (dock_item.name + '\t' + 'size:' + repr(dock_item.size) + '\t' + 'HEAD: ' + dock_item.head.pretty_read())
 
-	print ('---Just HEAD names ----')
-	for dock_item in DockList:
-		print (dock_item.head.pretty_read())
+	#print ('---Just HEAD names ----')
+	#for dock_item in DockList:
+	#	print (dock_item.head.pretty_read())
 
 
 

@@ -19,6 +19,8 @@ class dock:
 		self.elems = []		# All related gene clusters objects will 
 		self.size = 0
 		self.reversed = 'no'	# by default the gene cluster is not reversed!
+		self.draw = 0			# just to count the nunmber of draw items
+		self.max_cluster_len = 0	# useful to draw clusters proportionately
 		
 	def add(self, geneCluster):
 

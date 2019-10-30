@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+
 class geneCluster:
 	"""This class define gene clusters objects characterized by :
 	- their name
@@ -8,6 +11,7 @@ class geneCluster:
 	- the orientation of the genes
 	- the number of genes present
 	- the locus
+	- the record (in genbank format) that have been used to produce this gene cluster 
 	- etc """
 
 	def __init__(self, name):
@@ -19,6 +23,7 @@ class geneCluster:
 		self.molecule_name = []
 		self.strain_name = []
 		self.locus = []
+		self.record = SeqRecord(Seq(""))		# Create a minimal SeqRecord objects from scratch (see biopython doc)
 
 	def add(self, gene, strand):
 		"""Method to add one gene at a time. This method is largely used when parsing an annotation file. """
@@ -157,6 +162,9 @@ class geneCluster:
 		new.strain_name = self.strain_name
 		new.locus = self.locus
 		new.load(r_cluster, r_strand_2)
+		# Reverse complement the seqFeature object and keep some other annotations from the original record which otherwise are lost
+		new.record = self.record.reverse_complement(id=self.record.id, name=self.record.name, description=self.record.description, annotations=self.record.annotations)
+		# Note that by default there is no dict annotations in spliced seqFeature objects
 		return(new)
 
 		
