@@ -19,7 +19,7 @@ class geneCluster:
 		self.nb_genes = 0		# At instanciation, the object contains no genes
 		self.cluster = []
 		self.strand = []
-		self.amr_found = []
+		self.target_found = []
 		self.molecule_name = []
 		self.strain_name = []
 		self.locus = []
@@ -157,7 +157,7 @@ class geneCluster:
 		
 		# Keep other atributes
 		new.nb_genes = self.nb_genes
-		new.amr_found =self.amr_found
+		new.target_found =self.target_found
 		new.molecule_name = self.molecule_name
 		new.strain_name = self.strain_name
 		new.locus = self.locus

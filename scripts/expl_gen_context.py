@@ -25,6 +25,7 @@ import numpy
 import re
 import csv
 import glob
+import argparse
 
 # Importation des modules locaux
 from foreign_code import prepare_color_dict
@@ -45,12 +46,7 @@ def get_gbk_files(start_dir):
 
 
 
-
-
-
-
-
-def examine_gbk_file (gene, gbk_f):
+def examine_gbk_file (gene, gbk_f, card_gene):
 	""" Parse the content of a genbank file with BioPython SeqFeature module
 		Decouple the parsing with the SeqFeature engine and the function
 		that will check gene presence for a particular gene.
@@ -66,14 +62,14 @@ def examine_gbk_file (gene, gbk_f):
 		# print (s)
 
 		# Check in each record for the gene of interest
-		abc = check_gene_presence(gene, gbk_rec)
+		abc = check_gene_presence(gene, gbk_rec, card_gene)
 
 		hits.extend(abc)
 
 	return (hits)
 
 
-def check_gene_presence(gene, record):
+def check_gene_presence(gene, record, card_gene):
 	""" Check the presence of the AMR gene given in argument of the script 
 		This should be a gene referenced in th CARD database and annotated in an inference fied by PROKKA
 		This function return a 4-items list : an index, the feature, the AMR gene that have been found, and the entire record
@@ -81,22 +77,37 @@ def check_gene_presence(gene, record):
 
 	record_out= []
 
-	for i_feature, feature in enumerate(record.features):		
-		if feature.type == 'CDS':
-			if 'inference' in feature.qualifiers:
-				for inf in feature.qualifiers['inference']:
-					if ("protein_fasta_protein_homolog_model" or 
-						"protein_fasta_protein_knockout_model" or
-						"protein_fasta_protein_overexpression_model" or
-						"protein_fasta_protein_variant_model") in inf:
-						inf2 = inf.replace(" ", '') 	# To remove extra space converted from \n in genbank
-						b = inf2.split("|")				# To get the gene name
-						my_current_gene = (b[3])
+	if card_gene == 'IS':
+		#print ('Dealing with an IS')
+		# implement...
+		return
+
+	if card_gene == 'normal':
+		#print ('Dealing with a normal gene')
+		# implement...
+		return
+
+	if card_gene == 'card':
+
+
+	
+
+		for i_feature, feature in enumerate(record.features):		
+			if feature.type == 'CDS':
+				if 'inference' in feature.qualifiers:
+					for inf in feature.qualifiers['inference']:
+						if ("protein_fasta_protein_homolog_model" or 
+							"protein_fasta_protein_knockout_model" or
+							"protein_fasta_protein_overexpression_model" or
+							"protein_fasta_protein_variant_model") in inf:
+							inf2 = inf.replace(" ", '') 	# To remove extra space converted from \n in genbank
+							b = inf2.split("|")				# To get the gene name
+							my_current_gene = (b[3])
 						
 						# Fill an array with feature and iterator if current gene is the one that we are looking for 
-						if gene in my_current_gene:
-							record_out.append([i_feature, feature, my_current_gene, record])
-	return (record_out)
+							if gene in my_current_gene:
+								record_out.append([i_feature, feature, my_current_gene, record])
+		return (record_out)
 					
 						
 	
@@ -345,7 +356,6 @@ def recursive_draw_with_genomeDiagram(dock, clusters_per_page):
 		# Create an empty set of features linked to the newly created track
 		gd_feature_set = gd_track_for_features.new_set()
 
-
 		''' This is our home-made fn to fill the features set with stuff like genes colored according to categories,
 		specific label for AMR genes, etc! Inside the function digest_feature, there are many calls to gd_feature_set.add_feature
 		'''
@@ -356,7 +366,7 @@ def recursive_draw_with_genomeDiagram(dock, clusters_per_page):
 	add_blank_tracks(gd_diagram, n_blank_tracks)
 
 	gd_diagram.draw(format="linear", orientation="landscape", fragments=1, start=0, end=dock.max_cluster_len, track_size=0.75, tracklines=0)
-	gd_diagram.write(cwd + '/output_' + sys.argv[1] + '/maps/' + dock.name  + '_page' + repr(iterare) + '_linear.pdf', "PDF")
+	gd_diagram.write(cwd + '/output_' + target_gene + '/maps/' + dock.name  + '_page' + repr(iterare) + '_linear.pdf', "PDF")
 
 	# Update the dock.draw counter
 	dock.draw += clusters_per_page
@@ -364,34 +374,43 @@ def recursive_draw_with_genomeDiagram(dock, clusters_per_page):
 	recursive_draw_with_genomeDiagram(dock, clusters_per_page)
 
 
-# Main program
+
 
 if __name__ == "__main__":
 
 	""" The program will find gbk files and will produce one features list per gbk file""" 
 
-	
+	# Construct the argument parser
+	ap = argparse.ArgumentParser()
+
+	# Add the arguments to the parser
+	ap.add_argument("-t", "--target_gene", required=True, help="Gene targeted by the program")
+	ap.add_argument("-c", "--card", required=True, help="Boolean indicating if the target gene is referenced in CARD database")
+	ap.add_argument("-p", "--path", required=True, help="PATH of the folder containing the data ")
+	ap.add_argument("-n", "--genes_around_target", required=True, help="Integer specifying the number of genes explored around the target")
+
+	# Parsing arguments
+	args = vars(ap.parse_args())	# args a dict
+	target_gene = args['target_gene']	# There is a subtle diff between target_gene (ex. 'TEM' and target_found (TEM-1 or TEM-212)
+	folder = args['path']
+	card_gene = args['card']
+	nb_genes_in_context = int(args['genes_around_target'])
+
+	# Declaration of variables
 	L = []				# List of geneCluster objects	
 	DockList = []		# List of dock objects. A dock is a group of related gene clusters (see geneCluster.py)!
 
-	# Parsing arguments
-
-	amr_in = sys.argv[1]	# There is a subtle diff between amr_in (ex. 'TEM' and amr_found (TEM-1 or TEM-212)
-	folder = sys.argv[2]
-	nb_genes_in_context = int(sys.argv[3])
-
+	# Data treatment 
 	gbk_files = get_gbk_files(folder)		
 
 	for f in gbk_files:
-		hits = examine_gbk_file(amr_in, f)
+		hits = examine_gbk_file(target_gene, f, card_gene)
 
-		'''
-			Note that the hits list is a list of lists, which contains distinct objects
+		'''Note that the hits list is a list of lists, which contains distinct objects
 			[0], is the index of the amr_gene, i.e. the feature position of the amr_gene in the record
 			[1], is the feature of the amr_gene 
 			[2], is the amr_gene (string)
 			[3], is the complete record
- 
 		'''
 
 		if hits:
@@ -402,43 +421,38 @@ if __name__ == "__main__":
 				my_meta_stuff = get_metadata(f, hits)
 
 				# Give intelligent variables names to metadata
-				amr_found = my_meta_stuff.pop(0)
+				target_found = my_meta_stuff.pop(0)
 				gbk_file_name = my_meta_stuff.pop(0)
 				molecule_name = my_meta_stuff.pop(0)
 				strain_name = my_meta_stuff.pop(0)
 				gbk_record_name = my_meta_stuff.pop(0)
 				locus = my_meta_stuff.pop(0)
 
-				
-	
-				# The index of the amr_gene, i.e. the feature position of the amr_gene in the record
-				amr_index = my_hit[0]
+				# The index of the targeted gene, i.e. the feature position of the  targeted gene in the record
+				target_gene_index = my_hit[0]
 				
 				# Correspond to the complete record
-				amr_record = my_hit[3]
+				target_record = my_hit[3]
 
 				# Splice the record where an AMR gene has been found
-				sub_rec = splice_record(amr_index, amr_record, nb_genes_in_context)
+				sub_rec = splice_record(target_gene_index, target_record, nb_genes_in_context)
 				
 				""" As mentionned in the Biopython tutorial : "The SeqRecord slicing step is cautious in what annotation it preserves [...]
 				To keep the database cross references or the annotations dictionary, this must be done explicitly"
 				"""
-				sub_rec.annotations = amr_record.annotations.copy()
-
-
+				sub_rec.annotations = target_record.annotations.copy()
 
 				# Obtain a GeneCluster object from a subrecord 
 				my_gene_cluster = extract_gene_cluster(sub_rec)
 
-
 				# Add metadata to our gene cluster object
 				my_gene_cluster.locus=locus
-				my_gene_cluster.amr_found=amr_found
+				my_gene_cluster.target_found=target_found
 				my_gene_cluster.molecule_name=molecule_name
 				my_gene_cluster.strain_name=strain_name
 
-				# if not put my gene cluster in the proper orientation relative to amr_in
-				returned_cluster = check_arg_orientation(my_gene_cluster, amr_found)
+				# if not put my gene cluster in the proper orientation relative to target_gene
+				returned_cluster = check_arg_orientation(my_gene_cluster, target_found)
 
 				# Simply put the GeneCluster object in a list
 				L.append(returned_cluster)
@@ -450,7 +464,7 @@ if __name__ == "__main__":
 
 	# Step 1 ; Place the first cluster in an first Dock object
 	very_first_cluster = L2.pop(0)
-	my_dock = dock()		# When initializing a dock object, we need to pass the targeted_gene
+	my_dock = dock()
 	my_dock.add(very_first_cluster)
 	DockList.append(my_dock)		# Add the dock to the dock list
 
@@ -472,48 +486,60 @@ if __name__ == "__main__":
 			new_dock.add(c_value)
 			DockList.append(new_dock)	# Add the dock object to the list
 
-
-
-	# make folders if folder for strain does not exists
+	# Make folders if folder for strain does not exists
 	cwd = os.getcwd()
 
 	# Create output directory
-	if not os.path.exists(cwd + '/output_' + sys.argv[1]):
-		os.mkdir(cwd + '/output_' + sys.argv[1])
+	if not os.path.exists(cwd + '/output_' + target_gene):
+		os.mkdir(cwd + '/output_' + target_gene)
 
 
-	if not os.path.exists(cwd + '/output_' + sys.argv[1] + '/maps'):
-		os.mkdir(cwd + '/output_' + sys.argv[1] + '/maps')
-
+	if not os.path.exists(cwd + '/output_' + target_gene + '/maps'):
+		os.mkdir(cwd + '/output_' + target_gene + '/maps')
 
 
 	""" We will pass a dock object to a fn that will draw nice diagrams of the geneClusters present in that dock"""
 	for dock_item in DockList:
 		recursive_draw_with_genomeDiagram(dock_item, 8)		# 8 a good value for letter
 
+	# Output section
+	
+	# First file -- Detailed output
+	print ('---Detailled output----')
+	f1 = open(cwd + '/output_' + target_gene + '/detailed_output.csv','w')
+	outlines = 'amr\tdock_name\tdock_size\tStrain\tMolecule\tLocus\tReversed\tCluster\tCluster(Pretty) \tdock_HEAD(Pretty)\n'
 
-
-	my_string = "label\tvelo\t"
-
-	f = open(cwd + '/output_' + sys.argv[1] + '/csvfile.csv','w')
-	f.write(my_string)
-	f.close()
-
-
-
-	print ('---Final output----')
 	for dock_item in DockList:
-		print (dock_item.name + '\t' + 'size:' + repr(dock_item.size) + '\t' + 'HEAD: ' + dock_item.head.pretty_read())
 		for c in dock_item.elems:
-			print (c.read() + '\t' + c.locus + '\t' + c.strain_name + '\t' + c.name)
+			for i in [
+				c.target_found, dock_item.name, repr(dock_item.size),
+				c.strain_name, c.molecule_name, c.locus, dock_item.reversed, c.read(), c.pretty_read(),
+				dock_item.head.pretty_read()
+				]:
+					outlines += i + '\t'
+			outlines += '\n'
+	f1.write(outlines)
+	f1.close()
 
+	# Second file -- Brief summary
 	print ('---Very summarized output----')
+	f2 = open(cwd + '/output_' + target_gene + '/summary.csv','w')
+	summary = "Dock_name\tDock_size\tdock_HEAD\n"
+
 	for dock_item in DockList:
 		print (dock_item.name + '\t' + 'size:' + repr(dock_item.size) + '\t' + 'HEAD: ' + dock_item.head.pretty_read())
+		summary += dock_item.name + '\t' + repr(dock_item.size) + '\t' + dock_item.head.pretty_read() + '\n'	
+	f2.write(summary)
+	f2.close()
 
-	#print ('---Just HEAD names ----')
-	#for dock_item in DockList:
-	#	print (dock_item.head.pretty_read())
+
+
+
+
+
+
+
+
 
 
 
