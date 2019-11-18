@@ -23,6 +23,7 @@ class geneCluster:
 		self.molecule_name = []
 		self.strain_name = []
 		self.locus = []
+		self.organism = []
 		self.record = SeqRecord(Seq(""))		# Create a minimal SeqRecord objects from scratch (see biopython doc)
 
 	def add(self, gene, strand):
@@ -159,6 +160,7 @@ class geneCluster:
 		new.nb_genes = self.nb_genes
 		new.target_found =self.target_found
 		new.molecule_name = self.molecule_name
+		new.organism = self.organism
 		new.strain_name = self.strain_name
 		new.locus = self.locus
 		new.load(r_cluster, r_strand_2)

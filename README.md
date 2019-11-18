@@ -207,9 +207,13 @@ etc
 
 ## Example commands (quick)
 
+```
+source activate biopython
+```
+
 ```python
 cd scripts/
-./expl_gen_context.py CTX-M-1 ../mini_prokka/ 2
+./expl_gen_context.py -t 'CTX-M-1' -c 'card' -p '../mini_prokka/' -n 2
 ```
 
 As first argument, just use the name of the targeted antibiotic resistance gene, for example, CTX-M-1 as labeled in the CARD antibiotic resistance gene database.

@@ -50,6 +50,7 @@ def examine_gbk_file (gene, gbk_f, card_gene):
 	""" Parse the content of a genbank file with BioPython SeqFeature module
 		Decouple the parsing with the SeqFeature engine and the function
 		that will check gene presence for a particular gene.
+		Can return many occurences of the target gene (e.g. many tet genes in a chromosome section)
 	""" 
 
 	hits = []	# a list that may contain features and feature_iterators for that particular file
@@ -111,42 +112,24 @@ def check_gene_presence(gene, record, card_gene):
 					
 						
 	
-def get_metadata(f, out_list):
+def get_metadata_and_record(f, out_list):
 	""" Get and print important information about the strain, molecule, WGS contig, locus where
-		the amr gene was found 
+		the amr gene was found. out_list contains stuff for 1 hit. 
 	"""
 
-	# This is related to the organization of files
-	# For now, this script will work with the following files organization:
+	# Getteing metadata from the organization of files
+	# For now, this script work with the following files organization:
 	# strains folders then molecule folder then gbk files /Res13-blabla-strain1/plasmid_476/Res13-blabla_plasmid_476.gbk
 	gbk_file_name = (f.split('/')[-1])
 	molecule_name = (f.split('/')[-2])
 	strain_name = (f.split('/')[-3])
-	meta = strain_name + "\t" + molecule_name + "\t" + gbk_file_name
 
-	# First of all, try to grab the amr gene name 
-	# In item we should have [index, feature, AMR_gene, gbk_record_name (== wgs contig)]
-	for item in out_list:
+	amr_found_feature = out_list[1]
+	if 'locus_tag' in amr_found_feature.qualifiers:
+		locus = amr_found_feature.qualifiers['locus_tag'][0]
+	amr_found = out_list[2]
+	gbk_record_name = out_list[3].name
 
-		feature_position_in_record = repr(item[0])	# un index
-
-		# Here we have a seqFeature object for our desired AMR gene
-		amr_found_feature = item[1]
-		if 'locus_tag' in amr_found_feature.qualifiers:
-			locus = amr_found_feature.qualifiers['locus_tag'][0]
-
-		amr_found = item[2]
-		gbk_record_name = item[3].name
-
-
-		# Now we are ready to not print this, the infos is returned anyway
-		#print (amr_found + "\t"
-		#		+ meta + "\t"
-		#		+ gbk_record_name + "\t"
-		#		+ locus + "\t"
-		#		+ feature_position_in_record + "\n")
-
-	# Return a list, not a tuple
 	return [amr_found, gbk_file_name, molecule_name, strain_name, gbk_record_name, locus]
 
 
@@ -243,21 +226,27 @@ def splice_record(index, record, features_range):
 	return (sub_record)
 
 
-
-
-
-
-
 def extract_gene_cluster (record):
 	"""This function will give gene cluster and orientations
 	The function will also put the record into an attribute of the cluster object
+	Another new functionnality is to get  important informations present in the source FEATURE
 	"""
 
 	# Use our own class geneCluster
 
+
+
 	a = geneCluster(record.name)	
 	a.record = record	# We put a seqRecord object in our cluster object
 	for feature in record.features:
+		# By the way
+		if feature.type == 'source':
+			if 'organism' in feature.qualifiers:				
+				a.organism = feature.qualifiers['organism']
+
+			if 'strain' in feature.qualifiers:
+				a.strain_name = feature.qualifiers['strain']
+
 		if feature.type == 'CDS':		# We use the CDS fields
 			flagGeneDraw = 'FALSE'		# Initialize this 'Boolean'!
 
@@ -304,8 +293,8 @@ def check_arg_orientation(gene_cluster, amr_found):
 			reversed_gene_cluster = gene_cluster.reverse()
 			return reversed_gene_cluster
 		else:
-			print ('This should not happen!')
-
+			print ('Crashed. This should not happen!')
+			sys.exit()
 
 def add_blank_tracks(gd_diagram, n):
 	""" This function will create additionnal blank tracks to equilibrate the diagrams.
@@ -341,6 +330,8 @@ def recursive_draw_with_genomeDiagram(dock, clusters_per_page):
 	gd_diagram = GenomeDiagram.Diagram(dock.name + '_' + repr(iterare))
 
 	# For each geneClusters, we will create a track, add features, etc!
+	# The track_name print above each track came from the name of the GenBank record
+
 	for geneCluster in next_clusters:
 
 		name = geneCluster.record.annotations["source"]		# !need to fix this to ensure that we have a good label above each track!
@@ -351,7 +342,7 @@ def recursive_draw_with_genomeDiagram(dock, clusters_per_page):
 		dock.max_cluster_len = max(dock.max_cluster_len, len(geneCluster.record))
 
 		# Adding a track; each track being a different geneCluster
-		gd_track_for_features = gd_diagram.new_track(1, name=geneCluster.record.name, greytrack=True, start=0, height=1, end = len(geneCluster.record), scale=1, scaleticks=0)
+		gd_track_for_features = gd_diagram.new_track(1, name=(geneCluster.strain_name + '_' + geneCluster.molecule_name), greytrack=True, start=0, height=1, end = len(geneCluster.record), scale=1, scaleticks=0)
 
 		# Create an empty set of features linked to the newly created track
 		gd_feature_set = gd_track_for_features.new_set()
@@ -366,7 +357,8 @@ def recursive_draw_with_genomeDiagram(dock, clusters_per_page):
 	add_blank_tracks(gd_diagram, n_blank_tracks)
 
 	gd_diagram.draw(format="linear", orientation="landscape", fragments=1, start=0, end=dock.max_cluster_len, track_size=0.75, tracklines=0)
-	gd_diagram.write(cwd + '/output_' + target_gene + '/maps/' + dock.name  + '_page' + repr(iterare) + '_linear.pdf', "PDF")
+	gd_diagram.write(cwd + '/output_' + target_gene + '/maps_pdf/' + dock.name  + '_page' + repr(iterare) + '_linear.pdf', "PDF")
+	gd_diagram.write(cwd + '/output_' + target_gene + '/maps_svg/' + dock.name  + '_page' + repr(iterare) + '_linear.svg', "SVG")
 
 	# Update the dock.draw counter
 	dock.draw += clusters_per_page
@@ -415,34 +407,35 @@ if __name__ == "__main__":
 
 		if hits:
 			for my_hit in hits:
-
 				# Get the metadata
 				my_meta_stuff = []
-				my_meta_stuff = get_metadata(f, hits)
+				my_meta_stuff = get_metadata_and_record(f, my_hit)
 
 				# Give intelligent variables names to metadata
 				target_found = my_meta_stuff.pop(0)
 				gbk_file_name = my_meta_stuff.pop(0)
 				molecule_name = my_meta_stuff.pop(0)
-				strain_name = my_meta_stuff.pop(0)
+				strain_name = my_meta_stuff.pop(0)		# will be override later by  the extract_gene_cluster fn
 				gbk_record_name = my_meta_stuff.pop(0)
 				locus = my_meta_stuff.pop(0)
 
 				# The index of the targeted gene, i.e. the feature position of the  targeted gene in the record
 				target_gene_index = my_hit[0]
-				
+
 				# Correspond to the complete record
 				target_record = my_hit[3]
 
 				# Splice the record where an AMR gene has been found
 				sub_rec = splice_record(target_gene_index, target_record, nb_genes_in_context)
+
+				
 				
 				""" As mentionned in the Biopython tutorial : "The SeqRecord slicing step is cautious in what annotation it preserves [...]
 				To keep the database cross references or the annotations dictionary, this must be done explicitly"
 				"""
 				sub_rec.annotations = target_record.annotations.copy()
 
-				# Obtain a GeneCluster object from a subrecord 
+				# Obtain a GeneCluster object from a subrecord ; also get some metadata from the subrecod (hide in source field)
 				my_gene_cluster = extract_gene_cluster(sub_rec)
 
 				# Add metadata to our gene cluster object
@@ -451,22 +444,25 @@ if __name__ == "__main__":
 				my_gene_cluster.molecule_name=molecule_name
 				my_gene_cluster.strain_name=strain_name
 
-				# if not put my gene cluster in the proper orientation relative to target_gene
+				# if not, put gene cluster in the proper orientation relative to target_gene
 				returned_cluster = check_arg_orientation(my_gene_cluster, target_found)
 
 				# Simply put the GeneCluster object in a list
 				L.append(returned_cluster)
 
 
+	if not L:
+		print ("The target gene was not found")
+		sys.exit()	
+
 	# Sorting geneCluster objects according to their size
 	L2 = sorted(L, key=lambda x: x.nb_genes, reverse=True)
-		
-
+	
 	# Step 1 ; Place the first cluster in an first Dock object
 	very_first_cluster = L2.pop(0)
 	my_dock = dock()
 	my_dock.add(very_first_cluster)
-	DockList.append(my_dock)		# Add the dock to the dock list
+	DockList.append(my_dock)
 
 	# Step 2 - All other clusters need to be grouped
 	for c_index, c_value in enumerate(L2):
@@ -494,9 +490,11 @@ if __name__ == "__main__":
 		os.mkdir(cwd + '/output_' + target_gene)
 
 
-	if not os.path.exists(cwd + '/output_' + target_gene + '/maps'):
-		os.mkdir(cwd + '/output_' + target_gene + '/maps')
+	if not os.path.exists(cwd + '/output_' + target_gene + '/maps_pdf'):
+		os.mkdir(cwd + '/output_' + target_gene + '/maps_pdf')
 
+	if not os.path.exists(cwd + '/output_' + target_gene + '/maps_svg'):
+		os.mkdir(cwd + '/output_' + target_gene + '/maps_svg')
 
 	""" We will pass a dock object to a fn that will draw nice diagrams of the geneClusters present in that dock"""
 	for dock_item in DockList:
@@ -505,7 +503,7 @@ if __name__ == "__main__":
 	# Output section
 	
 	# First file -- Detailed output
-	print ('---Detailled output----')
+	print ('---See file Detailded output for a complete report ----')
 	f1 = open(cwd + '/output_' + target_gene + '/detailed_output.csv','w')
 	outlines = 'amr\tdock_name\tdock_size\tStrain\tMolecule\tLocus\tReversed\tCluster\tCluster(Pretty) \tdock_HEAD(Pretty)\n'
 
