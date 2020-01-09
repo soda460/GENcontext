@@ -1,6 +1,26 @@
 <p align="center"><img src="misc/cargo.jpg" alt="Exploring gene context" width="450"></p>
 
-EARGC (Exploring Antibiotic Resistance Gene Context) is a tool to discover the gene organization around specific genes in annotation files. For now, solely the the Genbank format is supported.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ARGcontext (Antibiotic Resistance Gene Context) is a tool to discover the gene organization around specific genes in annotation files. For now, solely the the Genbank format is supported.
 
 It was designed to find the genetic context around antibiotic resistance gene which are annotated very specifically in Genbank files. The main drawback of this tool is therefore that you have to follow a specific procedure to annotate your antibiotic resistance genes files. Briefly, the procedure require to use PROKKA with a custom database, namely the reference [CARD database.](hhttps://card.mcmaster.ca/ "The Comprehensive Antibiotic Resistance Database")
 
@@ -213,16 +233,23 @@ source activate biopython
 
 ```python
 cd scripts/
-./expl_gen_context.py -t 'CTX-M-1' -c 'card' -p '../mini_prokka/' -n 2
+./expl_gen_context.py -t 'CTX-M-1' -c 'card' -p '../mini_prokka/' -n 6 -e chromosome plasmid_973
+
+# For IS
+./expl_gen_context.py -t 'IS26' -c 'IS' -p ../gbk/mini_prokka/ -n 10
+
+
+
+
 ```
 
-As first argument, just use the name of the targeted antibiotic resistance gene, for example, CTX-M-1 as labeled in the CARD antibiotic resistance gene database.
+The 't' argument refer to the name of the targeted antibiotic resistance gene, for example, CTX-M-1 as labeled in the CARD antibiotic resistance gene database.
 
 Note that you can search for multiple alleles of an ARG. If you type CTX, the program will find the context around all CTX resistance genes.
 
-The second argument of the script is a single path where are located annotation files. The program will retrieved all genbank files nested in this folder.
+The 'p' argument is a single path where are located annotation files. The program will retrieved all genbank files nested in this folder.
 
-The last argument is the number of genes on both sides of the targeted genes that will be considered by the program.
+The 'n' argument is the number of genes on both sides of the targeted genes that will be considered by the program.
 
 
 

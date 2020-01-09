@@ -79,20 +79,31 @@ def check_gene_presence(gene, record, card_gene):
 	record_out= []
 
 	if card_gene == 'IS':
-		#print ('Dealing with an IS')
-		# implement...
-		return
+		for i_feature, feature in enumerate(record.features):		
+			if feature.type == 'CDS':
+				if 'inference' in feature.qualifiers:
+					for inf in feature.qualifiers['inference']:
+						if "ISfinder" in inf:
+							inf2 = inf.replace(" ", '') 	# To remove extra space converted from \n in genbank
+							b = inf2.split(":")				# To get the gene name
+							my_current_gene = (b[2])
+						
+							# Fill an array with feature and iterator if current gene is the one that we are looking for 
+							if gene in my_current_gene:
+								record_out.append([i_feature, feature, my_current_gene, record])
+
+		return (record_out)
 
 	if card_gene == 'normal':
-		#print ('Dealing with a normal gene')
-		# implement...
-		return
+		for i_feature, feature in enumerate(record.features):		
+			if feature.type == 'CDS':
+				if 'gene' in feature.qualifiers:
+					if feature.qualifiers['gene'][0] == gene:
+						record_out.append([i_feature, feature, gene, record])
+						#print ('We have found gene ' + gene)
+		return (record_out)
 
 	if card_gene == 'card':
-
-
-	
-
 		for i_feature, feature in enumerate(record.features):		
 			if feature.type == 'CDS':
 				if 'inference' in feature.qualifiers:
@@ -367,6 +378,15 @@ def recursive_draw_with_genomeDiagram(dock, clusters_per_page):
 
 
 
+def check_excluded_terms(excluded_terms, f):
+	""" This function will tell if gbk contains one of the exclued terms."""
+	if not excluded_terms:
+		return False
+	for term in excluded_terms:
+		if term in f:
+			return True
+	return False
+
 
 if __name__ == "__main__":
 
@@ -380,6 +400,7 @@ if __name__ == "__main__":
 	ap.add_argument("-c", "--card", required=True, help="Boolean indicating if the target gene is referenced in CARD database")
 	ap.add_argument("-p", "--path", required=True, help="PATH of the folder containing the data ")
 	ap.add_argument("-n", "--genes_around_target", required=True, help="Integer specifying the number of genes explored around the target")
+	ap.add_argument("-e", "--exclude", required=False, nargs='+', help="To exclude genbank files containing a specific term (e.g. chromosome")
 
 	# Parsing arguments
 	args = vars(ap.parse_args())	# args a dict
@@ -387,6 +408,7 @@ if __name__ == "__main__":
 	folder = args['path']
 	card_gene = args['card']
 	nb_genes_in_context = int(args['genes_around_target'])
+	excluded_terms = args['exclude']
 
 	# Declaration of variables
 	L = []				# List of geneCluster objects	
@@ -395,60 +417,67 @@ if __name__ == "__main__":
 	# Data treatment 
 	gbk_files = get_gbk_files(folder)		
 
+
+
+
 	for f in gbk_files:
-		hits = examine_gbk_file(target_gene, f, card_gene)
 
-		'''Note that the hits list is a list of lists, which contains distinct objects
-			[0], is the index of the amr_gene, i.e. the feature position of the amr_gene in the record
-			[1], is the feature of the amr_gene 
-			[2], is the amr_gene (string)
-			[3], is the complete record
-		'''
+		# check gbk
+		if not check_excluded_terms(excluded_terms, f):
 
-		if hits:
-			for my_hit in hits:
-				# Get the metadata
-				my_meta_stuff = []
-				my_meta_stuff = get_metadata_and_record(f, my_hit)
+			hits = examine_gbk_file(target_gene, f, card_gene)
 
-				# Give intelligent variables names to metadata
-				target_found = my_meta_stuff.pop(0)
-				gbk_file_name = my_meta_stuff.pop(0)
-				molecule_name = my_meta_stuff.pop(0)
-				strain_name = my_meta_stuff.pop(0)		# will be override later by  the extract_gene_cluster fn
-				gbk_record_name = my_meta_stuff.pop(0)
-				locus = my_meta_stuff.pop(0)
+			'''Note that the hits list is a list of lists, which contains distinct objects
+				[0], is the index of the amr_gene, i.e. the feature position of the amr_gene in the record
+				[1], is the feature of the amr_gene 
+				[2], is the amr_gene (string)
+				[3], is the complete record
+			'''
 
-				# The index of the targeted gene, i.e. the feature position of the  targeted gene in the record
-				target_gene_index = my_hit[0]
+			if hits:
+				for my_hit in hits:
+					# Get the metadata
+					my_meta_stuff = []
+					my_meta_stuff = get_metadata_and_record(f, my_hit)
 
-				# Correspond to the complete record
-				target_record = my_hit[3]
+					# Give intelligent variables names to metadata
+					target_found = my_meta_stuff.pop(0)
+					gbk_file_name = my_meta_stuff.pop(0)
+					molecule_name = my_meta_stuff.pop(0)
+					strain_name = my_meta_stuff.pop(0)		# will be override later by  the extract_gene_cluster fn
+					gbk_record_name = my_meta_stuff.pop(0)
+					locus = my_meta_stuff.pop(0)
 
-				# Splice the record where an AMR gene has been found
-				sub_rec = splice_record(target_gene_index, target_record, nb_genes_in_context)
+					# The index of the targeted gene, i.e. the feature position of the  targeted gene in the record
+					target_gene_index = my_hit[0]
+
+					# Correspond to the complete record
+					target_record = my_hit[3]
+
+					# Splice the record where an AMR gene has been found
+					sub_rec = splice_record(target_gene_index, target_record, nb_genes_in_context)
 
 				
 				
-				""" As mentionned in the Biopython tutorial : "The SeqRecord slicing step is cautious in what annotation it preserves [...]
-				To keep the database cross references or the annotations dictionary, this must be done explicitly"
-				"""
-				sub_rec.annotations = target_record.annotations.copy()
+					""" As mentionned in the Biopython tutorial : "The SeqRecord slicing step is cautious in what annotation it preserves [...]
+					To keep the database cross references or the annotations dictionary, this must be done explicitly"
+					"""
+					sub_rec.annotations = target_record.annotations.copy()
 
-				# Obtain a GeneCluster object from a subrecord ; also get some metadata from the subrecod (hide in source field)
-				my_gene_cluster = extract_gene_cluster(sub_rec)
+					# Obtain a GeneCluster object from a subrecord ; also get some metadata from the subrecod (hide in source field)
+					my_gene_cluster = extract_gene_cluster(sub_rec)
 
-				# Add metadata to our gene cluster object
-				my_gene_cluster.locus=locus
-				my_gene_cluster.target_found=target_found
-				my_gene_cluster.molecule_name=molecule_name
-				my_gene_cluster.strain_name=strain_name
+					# Add metadata to our gene cluster object
+					my_gene_cluster.locus=locus
+					my_gene_cluster.target_found=target_found
+					my_gene_cluster.molecule_name=molecule_name
+					my_gene_cluster.strain_name=strain_name
 
-				# if not, put gene cluster in the proper orientation relative to target_gene
-				returned_cluster = check_arg_orientation(my_gene_cluster, target_found)
+					# if not, put gene cluster in the proper orientation relative to target_gene
+					returned_cluster = check_arg_orientation(my_gene_cluster, target_found)
 
-				# Simply put the GeneCluster object in a list
-				L.append(returned_cluster)
+					# Simply put the GeneCluster object in a list
+					L.append(returned_cluster)
 
 
 	if not L:
