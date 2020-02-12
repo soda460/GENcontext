@@ -236,8 +236,11 @@ cd scripts/
 ./expl_gen_context.py -t 'CTX-M-1' -c 'card' -p '../mini_prokka/' -n 6 -e chromosome plasmid_973
 
 # For IS
-./expl_gen_context.py -t 'IS26' -c 'IS' -p ../gbk/mini_prokka/ -n 10
+./expl_gen_context.py -t 'IS26' -c 'IS' -p '../gbk/mini_prokka/' -n 10
 
+# To get a infos, notably the distance in bp,  about the other ARG presents
+
+./general_context.py -t 'CTX-M-1' -c 'card' -p '../gbk/mini_prokka/'
 
 
 

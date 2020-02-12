@@ -73,7 +73,8 @@ def examine_gbk_file (gene, gbk_f, card_gene):
 def check_gene_presence(gene, record, card_gene):
 	""" Check the presence of the AMR gene given in argument of the script 
 		This should be a gene referenced in th CARD database and annotated in an inference fied by PROKKA
-		This function return a 4-items list : an index, the feature, the AMR gene that have been found, and the entire record
+		This function return a 5-items list : an index, the feature, the AMR gene that have been found,
+		the entire record, and the featureLocation object of the checked gene.
 	"""
 
 	record_out= []
@@ -87,10 +88,11 @@ def check_gene_presence(gene, record, card_gene):
 							inf2 = inf.replace(" ", '') 	# To remove extra space converted from \n in genbank
 							b = inf2.split(":")				# To get the gene name
 							my_current_gene = (b[2])
+							myLoc = (feature.location.start, feature.location.end, feature.strand)
 						
 							# Fill an array with feature and iterator if current gene is the one that we are looking for 
 							if gene in my_current_gene:
-								record_out.append([i_feature, feature, my_current_gene, record])
+								record_out.append([i_feature, feature, my_current_gene, record, myLoc])
 
 		return (record_out)
 
@@ -115,10 +117,12 @@ def check_gene_presence(gene, record, card_gene):
 							inf2 = inf.replace(" ", '') 	# To remove extra space converted from \n in genbank
 							b = inf2.split("|")				# To get the gene name
 							my_current_gene = (b[3])
+							myLoc = (feature.location.start, feature.location.end, feature.strand)
+								
 						
 						# Fill an array with feature and iterator if current gene is the one that we are looking for 
 							if gene in my_current_gene:
-								record_out.append([i_feature, feature, my_current_gene, record])
+								record_out.append([i_feature, feature, my_current_gene, record, myLoc])
 		return (record_out)
 					
 						
@@ -397,7 +401,10 @@ if __name__ == "__main__":
 
 	# Add the arguments to the parser
 	ap.add_argument("-t", "--target_gene", required=True, help="Gene targeted by the program")
-	ap.add_argument("-c", "--card", required=True, help="Boolean indicating if the target gene is referenced in CARD database")
+	ap.add_argument("-c", "--card", required=True, help=" Gene category. \
+						    Two choices: card, which indicate that the \
+							target gene is referenced in CARD database \
+							and IS, for Insertion Sequence")
 	ap.add_argument("-p", "--path", required=True, help="PATH of the folder containing the data ")
 	ap.add_argument("-n", "--genes_around_target", required=True, help="Integer specifying the number of genes explored around the target")
 	ap.add_argument("-e", "--exclude", required=False, nargs='+', help="To exclude genbank files containing a specific term (e.g. chromosome")
@@ -432,6 +439,7 @@ if __name__ == "__main__":
 				[1], is the feature of the amr_gene 
 				[2], is the amr_gene (string)
 				[3], is the complete record
+				[4], is a FeatureLocation object containing the start, end and strand of the amr_gene
 			'''
 
 			if hits:
