@@ -57,6 +57,8 @@ conda create -n GeneContextEnv -c bioconda biopython reportlab
 
 
 ```
+git clone https://gccode.ssc-spc.gc.ca/ac_/dpl/genecontext.git
+# or
 git clone https://github.com/soda460/exploring_genetic_context.git
 ```
 
