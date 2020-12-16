@@ -20,7 +20,7 @@
 
 
 
-ARGcontext (Antibiotic Resistance Gene Context) is a tool to discover the gene organization around specific genes in annotation files. For now, solely the Genbank format is supported.
+geneContext is a tool to discover the gene organization around specific genes in annotation files. For now, solely the Genbank format is supported.
 
 It was designed to find the genetic context around antibiotic resistance gene which are annotated very specifically in Genbank files. The main drawback of this tool is therefore that you have to follow a specific procedure to annotate your antibiotic resistance genes files. Briefly, the procedure require to use PROKKA with a custom database, namely the reference [CARD database.](hhttps://card.mcmaster.ca/ "The Comprehensive Antibiotic Resistance Database")
 
@@ -47,7 +47,13 @@ It was designed to find the genetic context around antibiotic resistance gene wh
 
 ## Installation
 
-EARGC is a python stand-alone executable:
+geneContext is a python stand-alone executable:
+
+A good idea to test the program would be to install the dependencies in a conda environment
+
+```
+conda create -n GeneContextEnv -c bioconda biopython reportlab
+```
 
 
 ```
@@ -202,7 +208,7 @@ However, to benefit from good metadata labeling in output files, the best is to 
 
 ```bash
 tree ./annotation folder/ -P *.gbk
-```
+
 
 ├── strain1
 │   └── a_molecule
@@ -221,7 +227,7 @@ tree ./annotation folder/ -P *.gbk
 │   ├── plasmid_1068
 │   │   └── Res13-Lact-PER04-34_plasmid_1068.gbk
 etc
-
+```
 
 
 ## Example commands (quick)
