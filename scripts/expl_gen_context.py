@@ -15,7 +15,7 @@ __date__ = "2019-09-17"
 import sys
 import os
 from pathlib import Path
-#from Bio.Graphics import GenomeDiagram
+from Bio.Graphics import GenomeDiagram
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from io import StringIO
@@ -25,13 +25,14 @@ import numpy
 import re
 import csv
 import glob
+import argparse
 
 # Importation des modules locaux
 from foreign_code import prepare_color_dict
 from foreign_code import digest_features
 from foreign_code import get_coord_gene
 from geneCluster import geneCluster
-
+from dock import dock
 
 
 def get_gbk_files(start_dir):
@@ -45,15 +46,11 @@ def get_gbk_files(start_dir):
 
 
 
-
-
-
-
-
-def examine_gbk_file (gene, gbk_f):
+def examine_gbk_file (gene, gbk_f, card_gene):
 	""" Parse the content of a genbank file with BioPython SeqFeature module
 		Decouple the parsing with the SeqFeature engine and the function
 		that will check gene presence for a particular gene.
+		Can return many occurences of the target gene (e.g. many tet genes in a chromosome section)
 	""" 
 
 	hits = []	# a list that may contain features and feature_iterators for that particular file
@@ -66,144 +63,205 @@ def examine_gbk_file (gene, gbk_f):
 		# print (s)
 
 		# Check in each record for the gene of interest
-		abc = check_gene_presence(gene, gbk_rec)
+		abc = check_gene_presence(gene, gbk_rec, card_gene)
 
 		hits.extend(abc)
 
 	return (hits)
 
 
-def check_gene_presence(gene, record):
+def check_gene_presence(gene, record, card_gene):
 	""" Check the presence of the AMR gene given in argument of the script 
 		This should be a gene referenced in th CARD database and annotated in an inference fied by PROKKA
-		This function return a 4-items list : an index, the feature, the AMR gene that have been found, and the entire record
+		This function return a 5-items list : an index, the feature, the AMR gene that have been found,
+		the entire record, and the featureLocation object of the checked gene.
 	"""
 
 	record_out= []
 
-	for i_feature, feature in enumerate(record.features):		
-		if feature.type == 'CDS':
-			if 'inference' in feature.qualifiers:
-				for inf in feature.qualifiers['inference']:
-					if ("protein_fasta_protein_homolog_model" or 
-						"protein_fasta_protein_knockout_model" or
-						"protein_fasta_protein_overexpression_model" or
-						"protein_fasta_protein_variant_model") in inf:
-						inf2 = inf.replace(" ", '') 	# To remove extra space converted from \n in genbank
-						b = inf2.split("|")				# To get the gene name
-						my_current_gene = (b[3])
+	if card_gene == 'IS':
+		for i_feature, feature in enumerate(record.features):		
+			if feature.type == 'CDS':
+				if 'inference' in feature.qualifiers:
+					for inf in feature.qualifiers['inference']:
+						if "ISfinder" in inf:
+							inf2 = inf.replace(" ", '') 	# To remove extra space converted from \n in genbank
+							b = inf2.split(":")				# To get the gene name
+							my_current_gene = (b[2])
+							myLoc = (feature.location.start, feature.location.end, feature.strand)
+						
+							# Fill an array with feature and iterator if current gene is the one that we are looking for 
+							if gene in my_current_gene:
+								record_out.append([i_feature, feature, my_current_gene, record, myLoc])
+
+		return (record_out)
+
+	if card_gene == 'normal':
+		for i_feature, feature in enumerate(record.features):		
+			if feature.type == 'CDS':
+				if 'gene' in feature.qualifiers:
+					if feature.qualifiers['gene'][0] == gene:
+						record_out.append([i_feature, feature, gene, record])
+						#print ('We have found gene ' + gene)
+		return (record_out)
+
+	if card_gene == 'card':
+		for i_feature, feature in enumerate(record.features):		
+			if feature.type == 'CDS':
+				if 'inference' in feature.qualifiers:
+					for inf in feature.qualifiers['inference']:
+						if ("protein_fasta_protein_homolog_model" or 
+							"protein_fasta_protein_knockout_model" or
+							"protein_fasta_protein_overexpression_model" or
+							"protein_fasta_protein_variant_model") in inf:
+							inf2 = inf.replace(" ", '') 	# To remove extra space converted from \n in genbank
+							b = inf2.split("|")				# To get the gene name
+							my_current_gene = (b[3])
+							myLoc = (feature.location.start, feature.location.end, feature.strand)
+								
 						
 						# Fill an array with feature and iterator if current gene is the one that we are looking for 
-						if gene in my_current_gene:
-							record_out.append([i_feature, feature, my_current_gene, record])
-	return (record_out)
+							if gene in my_current_gene:
+								record_out.append([i_feature, feature, my_current_gene, record, myLoc])
+		return (record_out)
 					
 						
 	
-def get_metadata(f, out_list):
+def get_metadata_and_record(f, out_list):
 	""" Get and print important information about the strain, molecule, WGS contig, locus where
-		the amr gene was found 
+		the amr gene was found. out_list contains stuff for 1 hit. 
 	"""
 
-	# This is related to the organization of files
-	# For now, this script will work with the following files organization:
+	# Getteing metadata from the organization of files
+	# For now, this script work with the following files organization:
 	# strains folders then molecule folder then gbk files /Res13-blabla-strain1/plasmid_476/Res13-blabla_plasmid_476.gbk
 	gbk_file_name = (f.split('/')[-1])
 	molecule_name = (f.split('/')[-2])
 	strain_name = (f.split('/')[-3])
-	meta = strain_name + "\t" + molecule_name + "\t" + gbk_file_name
 
-	# First of all, try to grab the amr gene name 
-	# In item we should have [index, feature, AMR_gene, gbk_record_name (== wgs contig)]
-	for item in out_list:
+	amr_found_feature = out_list[1]
+	if 'locus_tag' in amr_found_feature.qualifiers:
+		locus = amr_found_feature.qualifiers['locus_tag'][0]
+	amr_found = out_list[2]
+	gbk_record_name = out_list[3].name
 
-		feature_position_in_record = repr(item[0])	# un index
-
-		# Here we have a seqFeature object for our desired AMR gene
-		amr_found_feature = item[1]
-		if 'locus_tag' in amr_found_feature.qualifiers:
-			locus = amr_found_feature.qualifiers['locus_tag'][0]
-
-		amr_found = item[2]
-		gbk_record_name = item[3].name
-
-
-		# Now we are ready to not print this, the infos is returned anyway
-		#print (amr_found + "\t"
-		#		+ meta + "\t"
-		#		+ gbk_record_name + "\t"
-		#		+ locus + "\t"
-		#		+ feature_position_in_record + "\n")
-
-	# Return a list, not a tuple
 	return [amr_found, gbk_file_name, molecule_name, strain_name, gbk_record_name, locus]
 
 
 def splice_record(index, record, features_range):
-	"""This function will try to get features around a given feature"""
+	"""This function get features around a given target feature index ignoring unknown genes in the same way than the
+	the extract_gene_cluster function	
+	"""
+	nb_features = len(record.features)
+	#print("inside fn \n nb feats:" + repr(nb_features) + ' ' + record.name)
+
+	''' The following code will count 'true' genes after the targeted AMR gene (index of record is given actually)'''
+	right_index = 0
+	left_index = 0
+	upstream_genes = 0
+	downstream_genes = 0
 
 
-	# to print the entire record
-	# print(record.features[index])
+	# Block A: Searching downstream of the targeted index
+	for i_feat, feature in enumerate(record.features[index + 1:], start=index + 1):
 
-	nb_features = len(record.features)		# number of features in the record
+		if downstream_genes >= features_range:		# End condition		
+			right_index = i_feat -1					# Because it iterate one more time before break
+			break
 
-	# Math pour savoir la plage de feature qui sera consideree
-	upper_bound = index + features_range
+		if feature.type == 'CDS':					# We focus on high quality CDS
+			flagGeneDraw = 'FALSE'
+			#print('ifeat:' + repr(i_feat) + ' feature: ' + repr(feature))
 
-	# if the index is too close from the end, the upper_bound will be nb_features minus 1 (0-indexed)
-	upper_bound = min(upper_bound, (nb_features - 1))	
+			# Block A1 'True' genes are grabed if annotated by CARD or labeled with ISfinder
+			if 'inference' in feature.qualifiers:					
+				for inf in feature.qualifiers['inference']:		# In some cases, more than one inference tag are present in gbk file.
+					if "protein_fasta_protein_homolog_model" in inf:
+						flagGeneDraw = 'TRUE'
+						downstream_genes += 1
+						break
+			
+					if "ISfinder" in inf:		
+						flagGeneDraw = 'TRUE'
+						downstream_genes += 1
+						break
 
-	lower_bound = index - features_range
+			# Otherwise, continue searching for high-quality CDS, which have a \gene tag
+			if flagGeneDraw == 'FALSE':
+				if 'locus_tag' in feature.qualifiers:
+					if 'gene' in feature.qualifiers:
+						flagGeneDraw = 'TRUE'
+						downstream_genes += 1
 
-	# if the index is too close from the start, the lower_bound will be 0
-	if (lower_bound <= 0):
-		lower_bound = 1		# !!! Because the first feature is usually source and it describes the whole molecule
+	# Block B: Searching upstream of the targeted index
+	''' We use enumarate on the elements before the targeted genes, then the built-in reversed fn and the orginal iterators!'''
+	for i_feat, feature in reversed(list(enumerate(record.features[:index -1] ))):
 
-
-	# s = "Feature range will be " + repr(lower_bound) + ":" + repr(upper_bound)
-	# print(s)
-
+		if upstream_genes >= features_range:		# End condition		
+			left_index = i_feat +1	# because the list is reversed and that the indices are the orginal ones 
+			break
 	
+		if feature.type == 'CDS':
+			flagGeneDraw = 'FALSE'
+			#print('ifeat:' + repr(i_feat) + ' feature: ' + repr(feature))
+			if 'inference' in feature.qualifiers:					
+				for inf in feature.qualifiers['inference']:		# In some cases, more than one inference tag are present in gbk file.
+					if "protein_fasta_protein_homolog_model" in inf:
+						flagGeneDraw = 'TRUE'
+						upstream_genes += 1
+						break
+			
+					if "ISfinder" in inf:		
+						flagGeneDraw = 'TRUE'
+						upstream_genes += 1
+						break
+
+			# Continue searching if not found in the last block
+			if flagGeneDraw == 'FALSE':
+				if 'locus_tag' in feature.qualifiers:
+					if 'gene' in feature.qualifiers:
+						flagGeneDraw = 'TRUE'
+						upstream_genes += 1
+
 	'''
-	Voici les qualifiers disponibles
-	locus_tag
-	codon_start
-	inference
-	translation
-	transl_table
-
-	location n'en fait pas partie
-
-	Pour acceder au coordonnes en nucletotide du
+	To access to nucletotide coords of the feature; do : 
 	print (record.features[index].location.start)
-	
 	https://biopython.org/DIST/docs/api/Bio.SeqFeature.FeatureLocation-class.html
-	En somme pour acceder aux elements on a les methodes start, end, et strand
+	Other qualifiers for location are : start, end, strand
+	Note that the start and end location numbering follow Python's scheme, thus a GenBank entry of 123..150 (one based counting)
+	becomes a location of [122:150] (zero based counting).
 	'''
+	lower_pos = record.features[left_index].location.start
+	upper_pos = record.features[right_index].location.end
 
-	'''Note that the start and end location numbering follow Python's scheme, thus a GenBank entry of 123..150 (one based counting)
-	becomes a location of [122:150] (zero based counting).'''
-
-	lower_pos = record.features[lower_bound].location.start
-	upper_pos = record.features[upper_bound].location.end
-
-	# s = "Original record will be spliced at positions " + repr(lower_pos) + ":" + repr(upper_pos)
-	# print(s)
+	s = "Original record will be spliced at positions " + repr(lower_pos) + ":" + repr(upper_pos)
+	#print(s)
 
 	sub_record = record[lower_pos:upper_pos]
-
 	return (sub_record)
 
 
 def extract_gene_cluster (record):
-	"""This function will give gene cluster and orientations"""
+	"""This function will give gene cluster and orientations
+	The function will also put the record into an attribute of the cluster object
+	Another new functionnality is to get  important informations present in the source FEATURE
+	"""
 
 	# Use our own class geneCluster
 
-	a = geneCluster(record.name)	
 
+
+	a = geneCluster(record.name)	
+	a.record = record	# We put a seqRecord object in our cluster object
 	for feature in record.features:
+		# By the way
+		if feature.type == 'source':
+			if 'organism' in feature.qualifiers:				
+				a.organism = feature.qualifiers['organism']
+
+			if 'strain' in feature.qualifiers:
+				a.strain_name = feature.qualifiers['strain']
+
 		if feature.type == 'CDS':		# We use the CDS fields
 			flagGeneDraw = 'FALSE'		# Initialize this 'Boolean'!
 
@@ -233,305 +291,291 @@ def extract_gene_cluster (record):
 						a.add(my_gene, feature.strand)
 					else:
 						my_gene= '?'
-						a.add(my_gene, feature.strand)
+						a.add(my_gene, feature.strand)	
 	return (a)
 
 
 
-def strange_sort(L):
-	"""This function sort a list of gene cluster objets according to ther size (nb genes)
+def check_arg_orientation(gene_cluster, amr_found):
+	"""This function will check if the antibiotic resistance gene of the given gene cluster is in the 5' 3' orientation."""
+
+	s='5\'-' + amr_found + '-3\''
+
+	if s in gene_cluster.read():
+			return	gene_cluster	# Already in the right orientation
+	else:
+		if s in gene_cluster.reverse_read():
+			reversed_gene_cluster = gene_cluster.reverse()
+			return reversed_gene_cluster
+		else:
+			print ('Crashed. This should not happen!')
+			sys.exit()
+
+def add_blank_tracks(gd_diagram, n):
+	""" This function will create additionnal blank tracks to equilibrate the diagrams.
+		When few track are present, this prevent tracks to use a lot of vertical space in the page.
 	"""
-	newlist = sorted(L, key=lambda x: x.nb_genes, reverse=True)
-	return newlist
+	for i in range (n):
+		gd_track_for_features = gd_diagram.new_track(1, name='void', greytrack=False, start=0, height=1, end = 0, scale=1, hide=1)
 
-def cluster_Gene_clusters(gene_cluster):
-	"""This function will try to classify a cluster into an appropriate entry in a dictionnary d
-	Pour que cette fn soit efficace, il faut 'envoyer' les gene clusters a regrouper en ordre
-	decroissant de taille, de maniere a ce que les plus gros regroupements se forment, puis que
-	ceux qui sont identiques ou plus petits mais compatibles s'y ajoutent.
-	"""
+		# Create an empty set of features. The newly created set is linked to the abovementionned track
+		gd_feature_set = gd_track_for_features.new_set()
+	return
 
-	s = ""
-	s = gene_cluster.read()
 
-	# check if we have an entry for that particular gene cluster
-	if s in d:
-		d[s]['n'] += 1
-		d[s]['geneClusterObjects'].append(gene_cluster)
-		#print ("--> Incrementing an existing gene cluster")
+def recursive_draw_with_genomeDiagram(dock, clusters_per_page):
+	""" This recursive function will draw one genome diagram each until all gene clusters are draw."""
+	if dock.draw >= dock.size:	# End condition
 		return
 
-	# remember ; for all the following there is no entry	
-	else:
+	cwd = os.getcwd()
+	# Create alphabet list of uppercase letters
+	alphabet = []
+	for letter in range(65, 91):
+		alphabet.append(chr(letter))
 
-		# Try if the reverse complement of the cluster match an entry in the dict
-		reverse_gene_cluster = gene_cluster.reverse()
-		r = ""
-		r = reverse_gene_cluster.read()
-		if r in d:
-			print ('--> Adding a reverse gene cluster to an existing category yeah!')
+	fn_colors = prepare_color_dict()	# a small dictionnary that associate colors to gene categories
+	iterare = round(dock.draw/clusters_per_page) + 1	# to known how many times the function have been called
 
-			# We count this cluster and add relative info in the entry of the 'unreversed' cluster
-			d[r]['n'] += 1
-			d[r]['geneClusterObjects'].append(gene_cluster)
+	''' Get the next clusters that were not already draw. They are stored (in reverse order of size) in the dock object'''
+	next_clusters = []
+	next_clusters = dock.elems[dock.draw:(dock.draw + clusters_per_page)]
 
+	# Creation of the genomeDiagram object for that call
+	gd_diagram = GenomeDiagram.Diagram(dock.name + '_' + repr(iterare))
 
+	# For each geneClusters, we will create a track, add features, etc!
+	# The track_name print above each track came from the name of the GenBank record
 
-			return
+	for geneCluster in next_clusters:
 
-		# other investigations , check if the cluster is included in another cluster(larger)
-		else:
+		name = geneCluster.record.annotations["source"]		# !need to fix this to ensure that we have a good label above each track!
+	
+		''' It is important to get the longest gbk record to keep proportionarity between clusters present on different diagrams
+		but belonging to the same dock. It is why, this value is put into a dock attribute.
+		'''
+		dock.max_cluster_len = max(dock.max_cluster_len, len(geneCluster.record))
 
-			a = check_if_included_in_larger_gene_cluster(gene_cluster, 'normal')
-			if a:
-				print (" --> Including a gene cluster into an existing cluster of gene clusters")
-				return
+		# Adding a track; each track being a different geneCluster
+		gd_track_for_features = gd_diagram.new_track(1, name=(geneCluster.strain_name + '_' + geneCluster.molecule_name), greytrack=True, start=0, height=1, end = len(geneCluster.record), scale=1, scaleticks=0)
 
-			b = check_if_included_in_larger_gene_cluster(reverse_gene_cluster, 'reverse')
-			if b:
-				print (" --> Including a reversed gene cluster into an existing cluster of gene clusters")
-				return
+		# Create an empty set of features linked to the newly created track
+		gd_feature_set = gd_track_for_features.new_set()
 
-			# All other cases			
-			print ('--> Adding a new gene cluster')
-			d[s] = {}
-			d[s]['amr_found'] = gene_cluster.amr_found
-			d[s]['n'] = 1
-			d[s]['geneClusterObjects'] = [gene_cluster]
-			return
+		''' This is our home-made fn to fill the features set with stuff like genes colored according to categories,
+		specific label for AMR genes, etc! Inside the function digest_feature, there are many calls to gd_feature_set.add_feature
+		'''
+		gd_feature_set = digest_features(geneCluster.record, fn_colors, gd_feature_set)
 
+	# Calculate the number of needed blanck tracks and add them
+	n_blank_tracks = clusters_per_page - len(next_clusters)
+	add_blank_tracks(gd_diagram, n_blank_tracks)
 
+	gd_diagram.draw(format="linear", orientation="landscape", fragments=1, start=0, end=dock.max_cluster_len, track_size=0.75, tracklines=0)
+	gd_diagram.write(cwd + '/output_' + target_gene + '/maps_pdf/' + dock.name  + '_page' + repr(iterare) + '_linear.pdf', "PDF")
+	gd_diagram.write(cwd + '/output_' + target_gene + '/maps_svg/' + dock.name  + '_page' + repr(iterare) + '_linear.svg', "SVG")
 
+	# Update the dock.draw counter
+	dock.draw += clusters_per_page
 
-def check_if_included_in_larger_gene_cluster(gene_cluster, status):
-
-	reverse_gene_cluster = gene_cluster.reverse()
-
-	# boucler sur tous les clusters presents dans le dict d | un dictionnaire ordinaire
-	for key, value in d.items():
-		for sub_key, sub_value in value.items():
-			if sub_key == 'geneClusterObjects':
-				for cluster_in_dict in sub_value:
-					if gene_cluster.isin(cluster_in_dict):
-						
-
-						# Check if the cluster examined is directly the prototype of a larger cluster 
-						if cluster_in_dict.read() in d:
-							#print ('clus.read()' + '\t', end='')
-							#print (cluster_in_dict.read())
-							#print ('gene_cluster.read()' + '\t', end='') 
-							#print (gene_cluster.read())
-
-							if status=='normal':
-								d[cluster_in_dict.read()]['n'] += 1
-								d[cluster_in_dict.read()]['geneClusterObjects'].append(gene_cluster)
-							
-								d[cluster_in_dict.read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.read()]['geneClusterObjects']) #!new
-
-								return True
-
-							if status=='reversed':
-								d[cluster_in_dict.read()]['n'] += 1
-								d[cluster_in_dict.read()]['geneClusterObjects'].append(reverse_gene_cluster)
-
-								d[cluster_in_dict.read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.read()]['geneClusterObjects']) #!new
-
-								return True
-
-
-						else:
-
-							# The following situation occurs occassionnaly when the examined gene cluster is found to be included in another gene cluster
-							# (beacause we iterate on all members of all clusters of gene clusters) and that the representative of this group is reversed
-							# For example consider a cluster of gene clusters with the key abcde in dictionnay d
-							# The cluster could contain many representatives [abcde, abcde, abcde, edcba]
-							# If the examined gene cluster is edc it would be found to be included in edcab
-							# We therefore need to increase the counter of this group and add edc to the list of gene cluster objects
-							# If we try to write in d with the key edcba, we would get a key error because the cluster of gene clusters
-							# is labeled with abcde. This is why we will use the revese_read() fn to access the appropriate key.
-							if cluster_in_dict.reverse_read() in d:
-								if status=='normal':
-									d[cluster_in_dict.reverse_read()]['n'] += 1
-									d[cluster_in_dict.reverse_read()]['geneClusterObjects'].append(gene_cluster)
-
-									d[cluster_in_dict.reverse_read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.reverse_read()]['geneClusterObjects']) #!new
-
-
-									return True
-								if status=='reversed':
-									d[cluster_in_dict.reverse_read()]['n'] += 1
-									d[cluster_in_dict.reverse_read()]['geneClusterObjects'].append(reverse_gene_cluster)
-
-									d[cluster_in_dict.reverse_read()]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.reverse_read()]['geneClusterObjects']) #!new
-
-									return True
-
-
-							else:
-								# The following situation occurs occassionnaly when one cluster is found to included in another gene cluster
-								# which is not the representative of the cluster of gene clusters (because the latter is not the full length
-								# version of the group. To handle it, we use the parent attribute which is assigned when one cluster was found to be included
-								# in another one (see the Class geneCluster).
-								if status=='normal':
-									d[cluster_in_dict.parent]['n'] += 1
-									d[cluster_in_dict.parent]['geneClusterObjects'].append(gene_cluster)
-
-									d[cluster_in_dict.parent]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.parent]['geneClusterObjects']) #!new
-
-									return True
-
-								if status=='reversed':
-									d[cluster_in_dict.parent]['n'] += 1
-									d[cluster_in_dict.parent]['geneClusterObjects'].append(reverse_gene_cluster)
-
-									d[cluster_in_dict.parent]['geneClusterObjects'] = strange_sort(d[cluster_in_dict.parent]['geneClusterObjects']) #!new
-
-									return True
+	recursive_draw_with_genomeDiagram(dock, clusters_per_page)
 
 
 
+def check_excluded_terms(excluded_terms, f):
+	""" This function will tell if gbk contains one of the exclued terms."""
+	if not excluded_terms:
+		return False
+	for term in excluded_terms:
+		if term in f:
+			return True
+	return False
 
-# Programme principal
 
 if __name__ == "__main__":
 
 	""" The program will find gbk files and will produce one features list per gbk file""" 
 
-	# Dict of gene clusters
-	#d = {}
-	d = OrderedDict()
+	# Construct the argument parser
+	ap = argparse.ArgumentParser()
 
-	# List of geneCluster objects
-	L = []
+	# Add the arguments to the parser
+	ap.add_argument("-t", "--target_gene", required=True, help="Gene targeted by the program")
+	ap.add_argument("-c", "--card", required=True, help=" Gene category. \
+						    Two choices: card, which indicate that the \
+							target gene is referenced in CARD database \
+							and IS, for Insertion Sequence")
+	ap.add_argument("-p", "--path", required=True, help="PATH of the folder containing the data ")
+	ap.add_argument("-n", "--genes_around_target", required=True, help="Integer specifying the number of genes explored around the target")
+	ap.add_argument("-e", "--exclude", required=False, nargs='+', help="To exclude genbank files containing a specific term (e.g. chromosome")
 
 	# Parsing arguments
-	amr_in = sys.argv[1]	# There is a subtle diff between amr_in (ex. 'TEM' and amr_found (TEM-1 or TEM-212)
-	folder = sys.argv[2]
-	nb_genes_in_context = int(sys.argv[3])
+	args = vars(ap.parse_args())	# args a dict
+	target_gene = args['target_gene']	# There is a subtle diff between target_gene (ex. 'TEM' and target_found (TEM-1 or TEM-212)
+	folder = args['path']
+	card_gene = args['card']
+	nb_genes_in_context = int(args['genes_around_target'])
+	excluded_terms = args['exclude']
 
+	# Declaration of variables
+	L = []				# List of geneCluster objects	
+	DockList = []		# List of dock objects. A dock is a group of related gene clusters (see geneCluster.py)!
+
+	# Data treatment 
 	gbk_files = get_gbk_files(folder)		
 
+
+
+
 	for f in gbk_files:
-		hits = examine_gbk_file(amr_in, f)
 
-		'''
-			Note that the hits list is a list of lists, which contains distinct objects
-			[0], is the index of the amr_gene, i.e. the feature position of the amr_gene in the record
-			[1], is the feature of the amr_gene 
-			[2], is the amr_gene (string)
-			[3], is the complete record
- 
-		'''
+		# check gbk
+		if not check_excluded_terms(excluded_terms, f):
 
-		if hits:
-			for my_hit in hits:
+			hits = examine_gbk_file(target_gene, f, card_gene)
 
-				# Get the metadata
-				my_meta_stuff = []
-				my_meta_stuff = get_metadata(f, hits)
+			'''Note that the hits list is a list of lists, which contains distinct objects
+				[0], is the index of the amr_gene, i.e. the feature position of the amr_gene in the record
+				[1], is the feature of the amr_gene 
+				[2], is the amr_gene (string)
+				[3], is the complete record
+				[4], is a FeatureLocation object containing the start, end and strand of the amr_gene
+			'''
 
-				# Give intelligent variables names to metadata
-				amr_found = my_meta_stuff.pop(0)
-				gbk_file_name = my_meta_stuff.pop(0)
-				molecule_name = my_meta_stuff.pop(0)
-				strain_name = my_meta_stuff.pop(0)
-				gbk_record_name = my_meta_stuff.pop(0)
-				locus = my_meta_stuff.pop(0)
+			if hits:
+				for my_hit in hits:
+					# Get the metadata
+					my_meta_stuff = []
+					my_meta_stuff = get_metadata_and_record(f, my_hit)
+
+					# Give intelligent variables names to metadata
+					target_found = my_meta_stuff.pop(0)
+					gbk_file_name = my_meta_stuff.pop(0)
+					molecule_name = my_meta_stuff.pop(0)
+					strain_name = my_meta_stuff.pop(0)		# will be override later by  the extract_gene_cluster fn
+					gbk_record_name = my_meta_stuff.pop(0)
+					locus = my_meta_stuff.pop(0)
+
+					# The index of the targeted gene, i.e. the feature position of the  targeted gene in the record
+					target_gene_index = my_hit[0]
+
+					# Correspond to the complete record
+					target_record = my_hit[3]
+
+					# Splice the record where an AMR gene has been found
+					sub_rec = splice_record(target_gene_index, target_record, nb_genes_in_context)
 
 				
+				
+					""" As mentionned in the Biopython tutorial : "The SeqRecord slicing step is cautious in what annotation it preserves [...]
+					To keep the database cross references or the annotations dictionary, this must be done explicitly"
+					"""
+					sub_rec.annotations = target_record.annotations.copy()
+
+					# Obtain a GeneCluster object from a subrecord ; also get some metadata from the subrecod (hide in source field)
+					my_gene_cluster = extract_gene_cluster(sub_rec)
+
+					# Add metadata to our gene cluster object
+					my_gene_cluster.locus=locus
+					my_gene_cluster.target_found=target_found
+					my_gene_cluster.molecule_name=molecule_name
+					my_gene_cluster.strain_name=strain_name
+
+					# if not, put gene cluster in the proper orientation relative to target_gene
+					returned_cluster = check_arg_orientation(my_gene_cluster, target_found)
+
+					# Simply put the GeneCluster object in a list
+					L.append(returned_cluster)
+
+
+	if not L:
+		print ("The target gene was not found")
+		sys.exit()	
+
+	# Sorting geneCluster objects according to their size
+	L2 = sorted(L, key=lambda x: x.nb_genes, reverse=True)
 	
-				# The index of the amr_gene, i.e. the feature position of the amr_gene in the record
-				amr_index = my_hit[0]
-				
-				# Correspond to the complete record
-				amr_record = my_hit[3]
+	# Step 1 ; Place the first cluster in an first Dock object
+	very_first_cluster = L2.pop(0)
+	my_dock = dock()
+	my_dock.add(very_first_cluster)
+	DockList.append(my_dock)
 
-				# Splice the record where an AMR gene has been found
-				sub_rec = splice_record(amr_index, amr_record, nb_genes_in_context)
-
-				# Obtain a GeneCluster object from a subrecord 
-				my_gene_cluster = extract_gene_cluster(sub_rec)
-
-
-				# Add metadata to our gene cluster object
-				my_gene_cluster.locus=locus
-				my_gene_cluster.amr_found=amr_found
-				my_gene_cluster.molecule_name=molecule_name
-				my_gene_cluster.strain_name=strain_name
-
-
-				# Simply put the GeneCluster object in a list
-				L.append(my_gene_cluster)
-
-
-	# Sort geneCluster objects according to their size
-	newlist = sorted(L, key=lambda x: x.nb_genes, reverse=True)
+	# Step 2 - All other clusters need to be grouped
+	for c_index, c_value in enumerate(L2):
 		
-	
+		# Try to put that cluster in an existing dock object
+		for d in DockList:
 
+			if c_value.isin(d.head):	# Check if the cluster examined can be inclued in the HEAD of a dock instance
+				d.add(c_value)			# If True, the gene cluster is add to the dock
 
-	for c in newlist:
-
-		# print (c.read())
-		# Verification que mes objects sont bien en ordre descendants de taille
-		# print(c.nb_genes, c.name, c.cluster)
-
-		# This will modify d a dictionnary
-		# Here we cluster similar or identical gene clusters
-
-		print('Dealing with-->' + c.read() + '<--')
-		cluster_Gene_clusters(c)
-
-	
-				
-
-
-	# we have a cool dictionnay d and we want to sorted it by the reverse order of the frequency of clusters
-	# We can do the following, but this will give just a list with our desired sorted keys
-	# Used at line 505
-	sorted_keys = sorted(d, key=lambda x: (d[x]['n']), reverse=True)
-
-
-	# After some stackoverflow searches, I,ve found the magic command that allow to create an OrderedDict object
-	# that will remember the insertion order of the items. We want to create the keys in reverse order of ['n']
-	# which is the number of occurence of the clusters
-
-	d2 = OrderedDict(sorted(d.items(), key=lambda x: x[1]['n'], reverse=True))
-	
-
-	# For output...
-	detailed='Gene found' + '\t' + 'Number of instances' + '\t' + 'Cluster' + '\t' + 'Strain name' + '\t' + 'Molecule' + '\t' + 'Locus' + '\t' + 'Nb genes in cluster' + '\n'
-	summary='Gene found' + '\t' + 'Number of instances' + '\t' + 'Cluster' + '\n'
-
-
-	# Passe au travers du dictio 	
-	for key, value in d2.items():
-		if isinstance(value, dict):
-			for sub_key, sub_value in value.items():
-
-				if sub_key == 'amr_found':
-
-					detailed += '\n' + sub_value + '\t'
-
-				if sub_key == 'n':
-					print('Regroupement de taille', sub_value)
-
-					detailed += repr(sub_value) + '\t' + key + '\n'
+				#print ('-->' + c_value.read() + ' has been add to ' + repr(d.name) + ' whose HEAD is : ' + d.head.read())
+				break
 		
-				if sub_key == 'geneClusterObjects':
-					for clus in sub_value:
+		else:
+			#print ('--> Create new dock items with' + c_value.read())
+			new_dock = dock()
+			new_dock.add(c_value)
+			DockList.append(new_dock)	# Add the dock object to the list
 
-						print(clus.read(), clus.name, clus.nb_genes, clus.strain_name)
-						detailed += '\t\t' + clus.read() + '\t' + clus.strain_name + '\t' + clus.molecule_name + '\t' + clus.locus + '\t' + repr(clus.nb_genes) + '\n'
+	# Make folders if folder for strain does not exists
+	cwd = os.getcwd()
+
+	# Create output directory
+	if not os.path.exists(cwd + '/output_' + target_gene):
+		os.mkdir(cwd + '/output_' + target_gene)
 
 
-				
+	if not os.path.exists(cwd + '/output_' + target_gene + '/maps_pdf'):
+		os.mkdir(cwd + '/output_' + target_gene + '/maps_pdf')
 
+	if not os.path.exists(cwd + '/output_' + target_gene + '/maps_svg'):
+		os.mkdir(cwd + '/output_' + target_gene + '/maps_svg')
 
+	""" We will pass a dock object to a fn that will draw nice diagrams of the geneClusters present in that dock"""
+	for dock_item in DockList:
+		recursive_draw_with_genomeDiagram(dock_item, 8)		# 8 a good value for letter
 
+	# Output section
 	
-	with open('detailed.txt', 'w') as file:
-		file.write(detailed)
+	# First file -- Detailed output
+	print ('---See file Detailded output for a complete report ----')
+	f1 = open(cwd + '/output_' + target_gene + '/detailed_output.csv','w')
+	outlines = 'amr\tdock_name\tdock_size\tStrain\tMolecule\tLocus\tReversed\tCluster\tCluster(Pretty) \tdock_HEAD(Pretty)\n'
+
+	for dock_item in DockList:
+		for c in dock_item.elems:
+			for i in [
+				c.target_found, dock_item.name, repr(dock_item.size),
+				c.strain_name, c.molecule_name, c.locus, dock_item.reversed, c.read(), c.pretty_read(),
+				dock_item.head.pretty_read()
+				]:
+					outlines += i + '\t'
+			outlines += '\n'
+	f1.write(outlines)
+	f1.close()
+
+	# Second file -- Brief summary
+	print ('---Very summarized output----')
+	f2 = open(cwd + '/output_' + target_gene + '/summary.csv','w')
+	summary = "Dock_name\tDock_size\tdock_HEAD\n"
+
+	for dock_item in DockList:
+		print (dock_item.name + '\t' + 'size:' + repr(dock_item.size) + '\t' + 'HEAD: ' + dock_item.head.pretty_read())
+		summary += dock_item.name + '\t' + repr(dock_item.size) + '\t' + dock_item.head.pretty_read() + '\n'	
+	f2.write(summary)
+	f2.close()
+
+
+
+
+
+
+
+
+
+
 
 
 

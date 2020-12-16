@@ -1,0 +1,107 @@
+LOCUS       p34_tig2                3256 bp    DNA     linear   BCT 12-FEB-2019
+DEFINITION  Escherichia coli strain Res13-Lact-PER04-34.
+ACCESSION   
+VERSION
+KEYWORDS    .
+SOURCE      Escherichia coli
+  ORGANISM  Escherichia coli
+            Bacteria; Proteobacteria; gamma subdivision; Enterobacteriaceae;
+            Escherichia.
+COMMENT     Annotated using prokka 1.13.3 from
+            https://github.com/tseemann/prokka.
+FEATURES             Location/Qualifiers
+     source          1..3256
+                     /organism="Escherichia coli"
+                     /mol_type="genomic DNA"
+                     /strain="Res13-Lact-PER04-34"
+                     /db_xref="taxon:562"
+     gene            484..678
+                     /locus_tag="HKCNFOJN_00001"
+     CDS             484..678
+                     /locus_tag="HKCNFOJN_00001"
+                     /inference="ab initio prediction:Prodigal:2.6"
+                     /inference="similar to AA sequence:PLASMIDS:ANM85927.1"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="RNA polymerase"
+                     /translation="MNKQQQTALNMARFIKSQSLTLLEKLDALDADEQAAMCERLHEL
+                     AEELQNSIQVRFETESETGT"
+     gene            complement(1675..1971)
+                     /locus_tag="HKCNFOJN_00002"
+     CDS             complement(1675..1971)
+                     /locus_tag="HKCNFOJN_00002"
+                     /inference="ab initio prediction:Prodigal:2.6"
+                     /inference="similar to AA sequence:PLASMIDS:AKL20574.1"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="XRE family transcriptional regulator"
+                     /translation="MINLVDPVHPGVFIREMFMEPFEISAADLSEKLHVSPSTLSRVL
+                     NGKADLSVEMALRLSRVLGRSAESWINMQTQYSLNASRKSPNVIKELDELVPIF"
+     gene            2315..2596
+                     /locus_tag="HKCNFOJN_00003"
+     CDS             2315..2596
+                     /locus_tag="HKCNFOJN_00003"
+                     /inference="ab initio prediction:Prodigal:2.6"
+                     /inference="similar to AA sequence:PLASMIDS:AKL20571.1"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="Killer protein"
+                     /translation="MIINIKHKGLRKFAETGNNAGIPQQFTQRLKLILTALSTATNLQ
+                     DMMDLKALRCHPLKGDRQGEYSLEVNGNWRVVFKLEEPNVFDVDLEDYH"
+ORIGIN      
+        1 aaaaaaacac accgcgccgc tagcagcacc cctaatataa aatgatgttt tttatgaaaa
+       61 tagtcagtac cacccctaaa aagcggtgtt ggcgcagcta caacaccgcg ccgacaccgc
+      121 ttttttaaat atcacaaaga gagcaagaag aactaatttg tcataactct ctatttataa
+      181 agaaaaatca gcaaaaaatt gtttttgcgt ggggtgtggg catttcaggc atgagaacag
+      241 actcgcgttt ttccggagta tcagcggaat tattgattaa gaaacactcg acgcagagcg
+      301 aaattttatg caacagcggc tgcactgcac agggattatt tatcagttga tatgctgtgc
+      361 catgatacgt cctaaaaaaa caggacagga tgtgcaattg taataccgtc gcccgcaacg
+      421 tcttacaatt accacctggt cagggtccac ccgacacccg gtactgacgg agaacaacgg
+      481 aaggtgaaca aacagcaaca aactgcgctg aatatggcgc gatttatcaa aagccagagc
+      541 ctgacactgc ttgaaaaact ggatgctctg gatgccgacg aacaggcggc catgtgcgaa
+      601 cgactgcacg aactcgcgga agaactccag aacagcatcc aggttcgctt tgagaccgaa
+      661 agtgaaacag gaacataacg aagctgacgg aggcgctcac ggcttgtccg cgagcgtttt
+      721 cggcagcaga caagcccgcc agggcgcgtc agcgggtgtc ggggcgaagc cctgacccag
+      781 tcacgtagcg atagcggagt gtatactggc ttaactatgc ggcatcagtg cagattgtat
+      841 gaaaagtgcc ccatgccggg tgtgaaattc cgcacagatg cgtaaggaga aaatgcgcgt
+      901 ccaggcgctt ttccgcttcc tcgctcactg actcgctacg ctcggtcgtt cggctgcggc
+      961 gagcggtact gacttacaca aaaacggcag cacggttatc cacagaatca ggggataagg
+     1021 ccggaaagaa catgtgagca aaagaccaag aacaggaaga aggccgcgcc gcaggcgttt
+     1081 ttccataggc tccgcccccc tgacgagcat cacagaaatc gacgctcaag tcagaggtgg
+     1141 cgaaacccga caggacttaa agataccaga cgtttccccc tggtggctcc ctcgtgcgct
+     1201 ctcctgttcc gaccctgccg cttaccggat acctgtccgc ctttctccct tcgggaagcg
+     1261 tggcgctttc tcatagctca cgctgtaggt atctcggttc agtgtaggtc gttcgctcca
+     1321 agctgggctg tgtgcacgaa ccccccgttc agcccgaccg ctgcgcctta tccggtaact
+     1381 atcatcttga gtccaacccg gaaagacatg caaaacacca ttggcagcag ccactggtaa
+     1441 ctgatttaga ggagttagtc ttgaagttat gcgccagtta aggctaaact gaaagaacaa
+     1501 gttttggtga ctgcgctcct ccaagccagt taccctggtt cagaaacttg ccggttactg
+     1561 aaccttcgaa aaaaccacct tgccgggtgg ttttttcgtt tacgagaaac gatacgatcc
+     1621 agttgcctga gagtcaagac agaaaaaggc cgcatatagc ggccttttct tttctcaaaa
+     1681 tataggaacc aattcatcta attccttaat gacattaggt gacttcctgc tcgcgttaag
+     1741 actgtattga gtctgcatgt ttatccacga ctcggcactg cgaccaagaa ctcgagaaag
+     1801 ccttaatgcc atctcaacac ttaaatcagc ttttccattc agcactctac ttagagtgga
+     1861 aggtgataca tgcagttttt cagacaggtc cgcggctgat atttcaaacg gttccataaa
+     1921 catctcacgg ataaaaaccc ctggatgtac tggatcgaca agattaatca taccttcctc
+     1981 tgaagcctat attagtttta aaaagatagg cctattgcgt tttcagattg cgcattgcgc
+     2041 ataacgcaac tcattgttga ctaaaaaaag aatgacatta tgatgcacat tggtgcgtct
+     2101 aatcattcct tatgatgtgg gtacttgatg tgaaattcaa ggccccggca ttgtacagcg
+     2161 catcaaacca atgtcaacag attaaaatgc gacttggtta agtaaaacct acgtcattta
+     2221 ttcaaataga gcaaggggtt tgcaatggaa atacggatga accggaaaaa taaactgcga
+     2281 tgtttctatc taaacaaata tgggatggtg attaatgatc ataaatatca agcataaagg
+     2341 tttgcgtaag tttgccgaaa caggtaacaa cgcaggaatt ccgcaacagt ttactcaacg
+     2401 tctgaagctg atcctaacag ccttaagcac agcgacgaac ttgcaggata tgatggattt
+     2461 aaaggcattg cgctgccatc cattgaaggg agaccgtcaa ggagagtatt cgttagaggt
+     2521 caatggaaac tggcgcgtag tgtttaagct cgaagaacct aacgtctttg acgtggatct
+     2581 cgaggattat cactaagaag gtccttaaag catcaaagtg acagtatcga tgctttaggg
+     2641 tctcataaaa aagcaaaacc tcggggtaag ttatatgaag tattttctgt accagatagt
+     2701 ccctatagca gccatcattt gcgcagcaat tctagcgcta aaaggtatca atggctgggg
+     2761 gtggttctta actgttgggt tcctgcttgc aggggcagat acagtaaagg ctcagttatc
+     2821 taagtagtaa taaacactat caatagtggt tggataattg ccaaaaaagc ctctatctgt
+     2881 tctgaaacag acaacaagga aaaatcggtg taagccacct ccataagagg tggtattgat
+     2941 atcaacatag ataaaaccat cccgtaaatc acagcattta ccataacgtc gcattacgcg
+     3001 caccgctaaa acgcgctgaa cgcgattctg ccgcaaacac cgcaaaaaga gatgttttac
+     3061 caagcgaaaa ccggaaaaat gcgtcaggat cgctttcagc tcactgcata gctatgcatg
+     3121 aaagtgaatg gcgatcggtt tgggcgcata cggtgcccat gagacacatt ttcggacatt
+     3181 ttcagttcgt gaatccctga ctcattgcta catatctgaa cagacacccc tagcagcgcc
+     3241 cccaggggcg tcctgt
+//

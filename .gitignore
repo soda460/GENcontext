@@ -1,0 +1,17 @@
+gbk/agrinova_hybrid
+gbk/MS_minION_all_gbk/
+gbk/R13_WGS_plasmid_476/
+gbk/R13_hybrid_assemblies/
+scripts/output*
+*.err
+*.faa
+*.gff
+*.sqn
+*.fsa
+*.fna
+*.log
+*.ffn
+*.tbl
+*.tsv
+*.txt
+

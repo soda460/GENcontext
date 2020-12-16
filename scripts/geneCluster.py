@@ -1,27 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-class geneCluster:
-	"""Classe définissant une regroupement de genes caractérisé par :
-	- son nom
-	- ses genes
-	- leur orientation
-	- le nombre de genes"""
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
-	def __init__(self, name):				# Notre méthode constructeur		
+class geneCluster:
+	"""This class define gene clusters objects characterized by :
+	- their name
+	- their genes
+	- the orientation of the genes
+	- the number of genes present
+	- the locus
+	- the record (in genbank format) that have been used to produce this gene cluster 
+	- etc """
+
+	def __init__(self, name):
 		self.name = name
-		self.nb_genes = 0 					# Au depart il est vide
+		self.nb_genes = 0		# At instanciation, the object contains no genes
 		self.cluster = []
 		self.strand = []
-		self.amr_found = []
+		self.target_found = []
 		self.molecule_name = []
 		self.strain_name = []
 		self.locus = []
-		self.parent = ""	# Pour garder la trace des inclusions dans d'autres gene clusters
-
+		self.organism = []
+		self.record = SeqRecord(Seq(""))		# Create a minimal SeqRecord objects from scratch (see biopython doc)
 
 	def add(self, gene, strand):
-		"""Methode pour ajouter un gene a la fois """
+		"""Method to add one gene at a time. This method is largely used when parsing an annotation file. """
 
 		self.nb_genes += 1
 		self.cluster.append(gene)
@@ -29,9 +35,8 @@ class geneCluster:
 
 
 	def read(self):
-		"""Une methode pour lire le contenu du cluster"""
+		"""This method allow to read the content of a cluster. """
 		s = ""
-		#s = self.name + ": "
 		for i,j in zip(self.cluster, self.strand):
 
 			if (j == 1 or j == '+'):
@@ -43,7 +48,21 @@ class geneCluster:
 		return(s)
 
 
+	def pretty_read(self):
+		"""This method allow to read the gene content of a cluster ignoring unknown genes . """
+		s = ""
+		for i,j in zip(self.cluster, self.strand):
+			if i == '?':
+				continue
+			
 
+			if (j == 1 or j == '+'):
+				s = s + '5\'-' + i + '-3\' '
+
+			if (j == -1 or j == '-'):
+				s = s + '3\'-' + i + '-5\' '
+
+		return(s)
 
 
 	def __eq__(self, other):
@@ -61,90 +80,109 @@ class geneCluster:
 
 
 	def isin(self, other):
-		"""Methode pour tester si un regroupement de gene est inclus dans un autre"""
-		l3=[]	# a list to store list index :)
+		"""Method to test if a gene cluster is inclued in another gene cluster. The method will also test the reverse complement.
+			Note that the presence of unknown genes (e.g. 5'-?-3' or 3'-?-5' will be ignored.)
+		"""
+		if isinstance(other, self.__class__):	# To be sure that the passed argument belong to class geneCluster
 
-		if isinstance(other, self.__class__):
-			"""Pour s'assurer que le parametre passe a la fn appartienne a la classe geneCluster"""
-
-			for i, val in enumerate(self.cluster):
-				if val in other.cluster:
+			# Create temporary objects to test the inclustion in clusters where Unknown genes have been replaced
+			self_like = geneCluster('bid')
+			other_like = geneCluster('bid')
 			
-					# Les indices des element du deuxieme cluster (other) communs a ceux du premier gene cluster sont gardes
-					l3.append(other.cluster.index(val))					
-				else:
-					return False
+			# proceed to the removal of unknown genes with the remove method
+			self_like = self.remove('?')
+			other_like = other.remove('?')		
 
-			# Here we test if the indices are consecutive 
-			if ( (l3[-1] - l3[0]) == (len(l3) - 1) ):
-				self.parent = other.read()
-				return True	
-			else:
-				# Try again with the reversed small cluster 
-				l3=[]				
-				rev_small = self.reverse()
-				for i, val in enumerate(rev_small.cluster):
-					if val in other.cluster:
-						l3.append(other.cluster.index(val))
-					else:
-						return False
-				# Here we test if the indices are consecutive 
-				if ( (l3[-1] - l3[0]) == (len(l3) - 1) ):
-					self.parent = other.read()
+
+			self_string = self_like.read()
+			other_string = other_like.read()
+			r_self_string = self_like.reverse_read()
+
+			if self_string in other_string:
+				return True
+			else:		
+
+				if r_self_string in other_string:
 					return True
 				else:
 					return False
-
 	
+
 	def load(self, gene_list, strand_list):
-		"""Methode pour loader des genes from scratch a partir d'une liste"""
+		"""Method to load genes from a list"""
 		self.cluster = gene_list
 		self.strand = strand_list
+		self.nb_genes = len(strand_list)
+
+
+	def remove(self, gene_to_remove):
+		"""Method to remove correctly sepcific genes from gene clusters, typically unknown genes"""
+		new = geneCluster(self.name + '_edited')
+		for i, gene in enumerate(self.cluster):
+			if gene != gene_to_remove:
+				new.add(gene, self.strand[i])
+		return(new)
+
+
+
+
+
+
+
+
 
 	def get_size(self):
-		"""Methode pour avoir le nombre de genes"""
+		"""Method to get the number of genes included in the gene cluster. """
 		return(self.nb_genes)
 
 
 	def reverse(self):
-		"""Methode pour inverser un regroupement de genes"""
-		r_cluster=[]	# to hold the inverted cluster
-		r_strand=[]		# to hold the new polarity
+		"""Method to reverse a gene cluster. """
+		r_cluster=[]	# To contain the inverted cluster
+		r_strand=[]		# To contain the new polarity
 		
-		# use the reversed function to reverse the list
+		# We use the buid-in reversed function to reverse the list
 		r_cluster = list(reversed(self.cluster))
 		r_strand = list(reversed(self.strand))
 
-		# polariyy need to be changed (reverse complement)
+		# Polarity need to be changed (reverse complement)
 		r_strand_2 = []
 		for i in r_strand:
 			if i == '+' or i == 1:
 				r_strand_2.append(-1)
+
 			if i == '-' or i == -1:
 				r_strand_2.append(1)
 
-		new = geneCluster(self.name + '_reversed')
+		new = geneCluster(self.name + '_reversed')	# A new instance is created
 		
-
-		# keep other atributes
+		# Keep other atributes
 		new.nb_genes = self.nb_genes
-		new.amr_found =self.amr_found
+		new.target_found =self.target_found
 		new.molecule_name = self.molecule_name
+		new.organism = self.organism
 		new.strain_name = self.strain_name
 		new.locus = self.locus
-		new.parent = self.parent	# Pour garder la trace des inclusions dans d'autres gene clusters
-	
 		new.load(r_cluster, r_strand_2)
-
+		# Reverse complement the seqFeature object and keep some other annotations from the original record which otherwise are lost
+		new.record = self.record.reverse_complement(id=self.record.id, name=self.record.name, description=self.record.description, annotations=self.record.annotations)
+		# Note that by default there is no dict annotations in spliced seqFeature objects
 		return(new)
 
 		
 	def reverse_read(self):
-		"""Une methode pour lire le reverse complement du cluster"""
+		"""A simple method to read the reverse complement of a gene cluster. """
 		r_string=""		
 		reverse_object = self.reverse()
 		r_string = reverse_object.read()
 		return (r_string)
+
+
+
+	
+
+
+
 
 
 

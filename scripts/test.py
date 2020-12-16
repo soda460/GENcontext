@@ -35,8 +35,10 @@ from geneCluster import geneCluster
 
 # try to use gene cluster
 a1 = geneCluster("small")
+
 b1 = geneCluster("medium")
 b2 = geneCluster("mediumCopy")
+
 c1 = geneCluster("large")
 d1 = geneCluster("test")
 
@@ -64,6 +66,7 @@ b2.add("int1", "+")
 
 
 c1.add("pilA", "-")
+c1.add("pilE", "-")
 c1.add("int1", "-")
 
 d1.add("rci", "+")
@@ -170,6 +173,9 @@ if __name__ == "__main__":
 
 
 	print(c1.isin(d1))
+	print(d1.isin(c1))
+
+
 	print(c1.read())
 	print(d1.read())
 
