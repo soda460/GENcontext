@@ -1,26 +1,8 @@
-<p align="center"><img src="misc/cargo.jpg" alt="Exploring gene context" width="450"></p>
+<p align="center"><img src="misc/logo_github_2.png" alt="Exploring gene context" width="1000"></p>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-geneContext is a tool to discover the gene organization around specific genes in annotation files. For now, solely the Genbank format is supported.
+GENcontext is a tool to discover the gene organization around specific genes in annotation files. For now, solely the Genbank format is supported.
 
 It was designed to find the genetic context around antibiotic resistance gene which are annotated very specifically in Genbank files. The main drawback of this tool is therefore that you have to follow a specific procedure to annotate your antibiotic resistance genes files. Briefly, the procedure require to use PROKKA with a custom database, namely the reference [CARD database.](hhttps://card.mcmaster.ca/ "The Comprehensive Antibiotic Resistance Database")
 
@@ -33,7 +15,7 @@ It was designed to find the genetic context around antibiotic resistance gene wh
 * [Requirements](#requirements)
 * [Installation](#installation)
 * [Example commands (quick)](#example-commands-quick)
-* [Acknowledgements](#acknowledgements)
+* [Contributors](#contributors)
 
 
 
@@ -51,12 +33,12 @@ geneContext is a python stand-alone executable:
 
 A good idea to test the program would be to install the dependencies in a conda environment
 
-```
+```shell
 conda create -n GeneContextEnv -c bioconda biopython reportlab
 ```
 
 
-```
+```shell
 git clone https://gccode.ssc-spc.gc.ca/ac_/dpl/genecontext.git
 # or
 git clone https://github.com/soda460/exploring_genetic_context.git
@@ -208,7 +190,7 @@ If interested, have a look at geneCluster.py for more details.
 
 However, to benefit from good metadata labeling in output files, the best is to have your genbank files organized in subfolders. At first level, create folders with strain_names and at second level, create folders with molecule names in which your genbank files will be located.
 
-```bash
+```shell
 tree ./annotation folder/ -P *.gbk
 
 
@@ -240,7 +222,7 @@ source activate biopython
 
 ```python
 cd scripts/
-./expl_gen_context.py -t 'CTX-M-1' -c 'card' -p '../mini_prokka/' -n 6 -e chromosome plasmid_973
+./expl_gen_context.py -t 'CTX-M-1' -c 'card' -p '../gbk/mini_prokka' -n 6 -e chromosome plasmid_973
 
 # For IS
 ./expl_gen_context.py -t 'IS26' -c 'IS' -p '../gbk/mini_prokka/' -n 10
@@ -264,15 +246,17 @@ The 'n' argument is the number of genes on both sides of the targeted genes that
 
 
 
+## Contributors
+
+  * Jean-Simon Brouard, Ph.D.  
+Biologist in bioinformatics, Science and Technology Branch  
+Agriculture and Agri-Food Canada / Government of Canada  
+jean-simon.brouard@canada.ca
 
 
+  * Dominic Poulin-Laprade, Ph.D.  
+Research Scientist, Science and Technology Branch  
+Agriculture and Agri-Food Canada / Government of Canada  
+Dominic.Poulin-Laprade@Canada.ca
 
-
-
-
-
-
-## Acknowledgements
-
-I owe many thanks to DPL and GT from AAFC.
 
