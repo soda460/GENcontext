@@ -2,9 +2,9 @@
 
 
 
-GENcontext is a tool to discover the gene organization around specific genes in annotation files. For now, solely the Genbank format is supported.
+GENcontext is a tool to discover the gene organization around specific genes in annotation files. For now, only the Genbank format is supported as input files.
 
-It was designed to find the genetic context around antibiotic resistance gene which are annotated very specifically in Genbank files. The main drawback of this tool is therefore that you have to follow a specific procedure to annotate your antibiotic resistance genes files. Briefly, the procedure require to use PROKKA with a custom database, namely the reference [CARD database.](hhttps://card.mcmaster.ca/ "The Comprehensive Antibiotic Resistance Database")
+It was designed to unreveal the distinct genetic contexts around targeted antibiotic resistance gene (ARGs)in a collection of Genbank files. Currently, a drawback of this tool is that you have to follow [a specific procedure](https://github.com/soda460/prokka_tag_ARGs_with--proteins) to annotate ARGs in your assemblies files. Briefly, the procedure requires to use PROKKA with the [Comprehensive Antibiotic Resistance Database](https://card.mcmaster.ca/ "The Comprehensive Antibiotic Resistance Database").
 
 
 
@@ -14,8 +14,11 @@ It was designed to find the genetic context around antibiotic resistance gene wh
 
 * [Requirements](#requirements)
 * [Installation](#installation)
+* [The class GeneCluster.py](#the-class-GeneCluster.py)
+* [The class Dock.py](#the-class-Dock.py)
 * [Example commands (quick)](#example-commands-quick)
 * [Contributors](#contributors)
+
 
 
 
@@ -29,20 +32,21 @@ It was designed to find the genetic context around antibiotic resistance gene wh
 
 ## Installation
 
-geneContext is a python stand-alone executable:
+GENcontext is a python stand-alone executable:
 
-A good idea to test the program would be to install the dependencies in a conda environment
+A good idea to test the program would be to clone this repository.
+
+```shell
+git clone https://github.com/soda460/GENcontext.git
+```
+
+and install the dependencies in a conda environment
 
 ```shell
 conda create -n GeneContextEnv -c bioconda biopython reportlab
 ```
 
 
-```shell
-git clone https://gccode.ssc-spc.gc.ca/ac_/dpl/genecontext.git
-# or
-git clone https://github.com/soda460/exploring_genetic_context.git
-```
 
 ## The class GeneCluster.py
 
@@ -184,7 +188,7 @@ If interested, have a look at geneCluster.py for more details.
 
 
 
-#### Setting up your annotation files
+#### Setting up your annotation files when input is the MOB-suite output
 
 
 
@@ -217,23 +221,25 @@ etc
 ## Example commands (quick)
 
 ```
-source activate biopython
+conda activate GeneContextEnv
 ```
 
 ```python
 cd scripts/
-./expl_gen_context.py -t 'CTX-M-1' -c 'card' -p '../gbk/mini_prokka' -n 6 -e chromosome plasmid_973
+./expl_gen_context.py -i mob-suite -t 'CTX-M-1' -c 'card' -p '../gbk/mini_prokka' -n 6 -e chromosome plasmid_973
 
 # For IS
-./expl_gen_context.py -t 'IS26' -c 'IS' -p '../gbk/mini_prokka/' -n 10
+./expl_gen_context.py -i mob-suite -t 'IS26' -c 'IS' -p '../gbk/mini_prokka/' -n 10
 
 # To get a infos, notably the distance in bp,  about the other ARG presents
-
 ./general_context.py -t 'CTX-M-1' -c 'card' -p '../gbk/mini_prokka/'
 
 
 
 ```
+
+The optional 'i' argument refer to the kind of input given to the programs. When specifying 'mob-suite' the program assume that indivual gbk files exist for each molecule (for each plasmid and for the chromomosme) and are organized in subfolders. This is important because the program will get the strain and molecule from the PATH of the gbk files. Otherwise, the default value is 'plain' and in that case, the strain and molecule name are obtained directly from specific fields in the genbank file.
+
 
 The 't' argument refer to the name of the targeted antibiotic resistance gene, for example, CTX-M-1 as labeled in the CARD antibiotic resistance gene database.
 
@@ -242,6 +248,16 @@ Note that you can search for multiple alleles of an ARG. If you type CTX, the pr
 The 'p' argument is a single path where are located annotation files. The program will retrieved all genbank files nested in this folder.
 
 The 'n' argument is the number of genes on both sides of the targeted genes that will be considered by the program.
+
+
+## Remote repositories
+
+Exact copies of this project exist at two locations :
+
+old-origin	https://github.com/soda460/GENcontext (fetch)
+old-origin	https://github.com/soda460/GENcontext (push)
+origin	https://gccode.ssc-spc.gc.ca/ac_/dpl/genecontext.git (fetch)
+origin	https://gccode.ssc-spc.gc.ca/ac_/dpl/genecontext.git (push)
 
 
 

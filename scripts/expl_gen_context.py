@@ -127,23 +127,39 @@ def check_gene_presence(gene, record, card_gene):
 					
 						
 	
-def get_metadata_and_record(f, out_list):
+def get_metadata_and_record(f, out_list, input_organization):
 	""" Get and print important information about the strain, molecule, WGS contig, locus where
 		the amr gene was found. out_list contains stuff for 1 hit. 
 	"""
 
-	# Getteing metadata from the organization of files
-	# For now, this script work with the following files organization:
-	# strains folders then molecule folder then gbk files /Res13-blabla-strain1/plasmid_476/Res13-blabla_plasmid_476.gbk
+	# Get metadata from the organization of files
 	gbk_file_name = (f.split('/')[-1])
-	molecule_name = (f.split('/')[-2])
-	strain_name = (f.split('/')[-3])
-
 	amr_found_feature = out_list[1]
 	if 'locus_tag' in amr_found_feature.qualifiers:
 		locus = amr_found_feature.qualifiers['locus_tag'][0]
+	else:
+		locus = 'unknown'
 	amr_found = out_list[2]
 	gbk_record_name = out_list[3].name
+	
+	if input_organization == 'plain':
+		'''
+		In the case of curated gbk file, the DEFINITION line should give a good idea of the molecule_name and strain_name!
+		We will pass this field to the molecule_name 
+		strains_folders then molecule_folder then gbk files e.g. /Res13-blabla-strain1/plasmid_476/Res13-blabla_plasmid_476.gbk
+		'''
+		molecule_name = out_list[3].name # That come from the LOCUS field in gbk files
+		#strain_name = out_list[3].annotations["source"]
+		strain_name = out_list[3].description[:50]
+		
+	elif input_organization == 'mob-suite':
+		'''
+		At the origin, this script work with the following files organization:
+		strains_folders then molecule_folder then gbk files e.g. /Res13-blabla-strain1/plasmid_476/Res13-blabla_plasmid_476.gbk
+		'''
+		description = ''
+		molecule_name = (f.split('/')[-2])
+		strain_name = (f.split('/')[-3])
 
 	return [amr_found, gbk_file_name, molecule_name, strain_name, gbk_record_name, locus]
 
@@ -408,12 +424,19 @@ if __name__ == "__main__":
 	ap.add_argument("-p", "--path", required=True, help="PATH of the folder containing the data ")
 	ap.add_argument("-n", "--genes_around_target", required=True, help="Integer specifying the number of genes explored around the target")
 	ap.add_argument("-e", "--exclude", required=False, nargs='+', help="To exclude genbank files containing a specific term (e.g. chromosome")
+	ap.add_argument("-i", "--input", required=False, default='plain', help="Input organization of genbank files. \
+						    Two choices: plain, e.g. curated fasta files from genbank \
+							and mob-suite where there are distinct genbank files for each plasmid")
 
+	
+	
 	# Parsing arguments
 	args = vars(ap.parse_args())	# args a dict
 	target_gene = args['target_gene']	# There is a subtle diff between target_gene (ex. 'TEM' and target_found (TEM-1 or TEM-212)
 	folder = args['path']
 	card_gene = args['card']
+	input_organization = args['input']
+	
 	nb_genes_in_context = int(args['genes_around_target'])
 	excluded_terms = args['exclude']
 
@@ -423,9 +446,6 @@ if __name__ == "__main__":
 
 	# Data treatment 
 	gbk_files = get_gbk_files(folder)		
-
-
-
 
 	for f in gbk_files:
 
@@ -446,7 +466,7 @@ if __name__ == "__main__":
 				for my_hit in hits:
 					# Get the metadata
 					my_meta_stuff = []
-					my_meta_stuff = get_metadata_and_record(f, my_hit)
+					my_meta_stuff = get_metadata_and_record(f, my_hit, input_organization)
 
 					# Give intelligent variables names to metadata
 					target_found = my_meta_stuff.pop(0)
@@ -455,7 +475,7 @@ if __name__ == "__main__":
 					strain_name = my_meta_stuff.pop(0)		# will be override later by  the extract_gene_cluster fn
 					gbk_record_name = my_meta_stuff.pop(0)
 					locus = my_meta_stuff.pop(0)
-
+					
 					# The index of the targeted gene, i.e. the feature position of the  targeted gene in the record
 					target_gene_index = my_hit[0]
 
