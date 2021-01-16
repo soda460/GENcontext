@@ -4,7 +4,7 @@
 
 GENcontext is a tool to discover the gene organization around specific genes in annotation files. For now, only the Genbank format is supported as input files.
 
-It was designed to unreveal the distinct genetic contexts around targeted antibiotic resistance gene (ARGs)in a collection of Genbank files. Currently, a drawback of this tool is that you have to follow [a specific procedure](https://github.com/soda460/prokka_tag_ARGs_with--proteins) to annotate ARGs in your assemblies files. Briefly, the procedure requires to use PROKKA with the [Comprehensive Antibiotic Resistance Database](https://card.mcmaster.ca/ "The Comprehensive Antibiotic Resistance Database").
+It was designed to unreveal the distinct genetic contexts around targeted antibiotic resistance genes (ARGs) in a collection of Genbank files. Currently, a drawback of this tool is that you have to follow [a specific procedure](https://github.com/soda460/prokka_tag_ARGs_with--proteins) to annotate ARGs in your assemblies files. Briefly, the procedure requires to use [PROKKA](https://github.com/tseemann/prokka) with the [Comprehensive Antibiotic Resistance Database](https://card.mcmaster.ca/ "The Comprehensive Antibiotic Resistance Database").
 
 
 
@@ -14,8 +14,8 @@ It was designed to unreveal the distinct genetic contexts around targeted antibi
 
 * [Requirements](#requirements)
 * [Installation](#installation)
-* [The class GeneCluster.py](#the-class-GeneCluster.py)
-* [The class Dock.py](#the-class-Dock.py)
+* [The class GeneCluster.py](#The-class-GeneClusterpy)
+* [The class Dock.py](#The-class-Dockpy)
 * [Example commands (quick)](#example-commands-quick)
 * [Contributors](#contributors)
 
@@ -247,17 +247,17 @@ Note that you can search for multiple alleles of an ARG. If you type CTX, the pr
 
 The 'p' argument is a single path where are located annotation files. The program will retrieved all genbank files nested in this folder.
 
-The 'n' argument is the number of genes on both sides of the targeted genes that will be considered by the program.
+The 'n' argument is the number of genes (CDS features actually) on both sides of the targeted genes that will be considered by the program.
 
 
 ## Remote repositories
 
 Exact copies of this project exist at two locations :
 
-old-origin	https://github.com/soda460/GENcontext (fetch)
-old-origin	https://github.com/soda460/GENcontext (push)
-origin	https://gccode.ssc-spc.gc.ca/ac_/dpl/genecontext.git (fetch)
-origin	https://gccode.ssc-spc.gc.ca/ac_/dpl/genecontext.git (push)
+old-origin	https://github.com/soda460/GENcontext (fetch)  
+old-origin	https://github.com/soda460/GENcontext (push)  
+origin	https://gccode.ssc-spc.gc.ca/ac_/dpl/genecontext.git (fetch)  
+origin	https://gccode.ssc-spc.gc.ca/ac_/dpl/genecontext.git (push)  
 
 
 
