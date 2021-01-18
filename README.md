@@ -1,13 +1,8 @@
 <p align="center"><img src="misc/logo_github_2.png" alt="Exploring gene context" width="1000"></p>
 
+GENcontext is a tool designed to discover the genetic organization around specific loci (e.g. antibiotic resistance genes, IS elements) in annotation files in the Genbank format. You need to define your loci of interest and the requested number of adjacent features. The tool outputs text files and schematic representations of the genetic organization around the loci of interest.
 
-
-GENcontext is a tool to discover the gene organization around specific genes in annotation files. For now, only the Genbank format is supported as input files.
-
-It was designed to unreveal the distinct genetic contexts around targeted antibiotic resistance genes (ARGs) in a collection of Genbank files. Currently, a drawback of this tool is that you have to follow [a specific procedure](https://github.com/soda460/prokka_tag_ARGs_with--proteins) to annotate ARGs in your assemblies files. Briefly, the procedure requires to use [PROKKA](https://github.com/tseemann/prokka) with the [Comprehensive Antibiotic Resistance Database](https://card.mcmaster.ca/ "The Comprehensive Antibiotic Resistance Database").
-
-
-
+In the current version of GENcontext,you have to follow [a specific procedure](https://github.com/soda460/prokka_tag_ARGs_with--proteins) to annotate ARGs in your assemblies files. Briefly, the procedure requires to use [PROKKA](https://github.com/tseemann/prokka) with the [Comprehensive Antibiotic Resistance Database](https://card.mcmaster.ca/ "The Comprehensive Antibiotic Resistance Database").
 
 
 ## Table of contents
